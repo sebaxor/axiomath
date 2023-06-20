@@ -1,113 +1,132 @@
 ﻿using AxioMath.Core;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace AxioMath.Solvers
 {
-    public class ExpressionBuilder
+    public class ComplexExpressionBuilder
     {
-        IExpression result;
-        string nextConstantName = "a";
-        private int constantIndex = 0;
+
+        //TODO
+        //El complex value debe ser expression
+
+        Expression<ComplexValue> result;
+        //string nextConstantName = "a";
+        //private int constantIndex = 0;
 
 
-        public ExpressionBuilder Constant(double realNumber)
+        public ComplexExpressionBuilder Constant(double realNumber)
         {
-            result = new RealConstant<RealNumber>(GetConstantName(), new RealNumber(realNumber));
+            result = new ComplexValue(realNumber);
             return this;
         }
-        public ExpressionBuilder Variable(string name)
+        public ComplexExpressionBuilder Variable(string name)
         {
-            result = new Variable<RealNumber>(name);
+            result = new ComplexValue(name);
             return this;
         }
 
-        public IExpression Generate()
+        public Expression<ComplexValue> Generate()
         {
             var res = result;
             result = null;
             return res;
         }
 
-        public ExpressionBuilder Sum(params double[] realTerms)
+        public ComplexExpressionBuilder CreateSum(double left, double right)
         {
-            var parameters = new List<IExpression>();
-            parameters.Add(result);
-            parameters.AddRange(realTerms.Select(x => new RealConstant<RealNumber>(GetConstantName(), new RealNumber(x))));
-            result = new Sum(parameters.ToArray());
+
+            result = new AdditionExpression<ComplexValue>(new ComplexValue(left),
+               new ComplexValue(right));
             return this;
         }
 
-        public ExpressionBuilder CreateMultiply(params double[] realFactors)
+        public ComplexExpressionBuilder CreateSum(Expression<ComplexValue> left, Expression<ComplexValue> right)
         {
-            result = new Multiply(realFactors.Select(x => new RealConstant<RealNumber>(GetConstantName(), new RealNumber(x))).ToArray());
-            return this;
-        }
-        public ExpressionBuilder Multiply(params double[] realFactors)
-        {
-            var parameters = new List<IExpression>();
-            parameters.Add(result);
-            parameters.AddRange(realFactors.Select(x => new RealConstant<RealNumber>(GetConstantName(), new RealNumber(x))));
-            result = new Multiply(parameters.ToArray());
-            return this;
-        }
-        public ExpressionBuilder Multiply(string variable)
-        {
-            result = new Multiply(result, new Variable<RealNumber>(variable));
+
+            result = new AdditionExpression<ComplexValue>(left, right);
             return this;
         }
 
-        public ExpressionBuilder Divide(double realDenominator)
+        public ComplexExpressionBuilder Sum(double right)
         {
-            result = new Divide(result, new RealConstant<RealNumber>(GetConstantName(), new RealNumber(realDenominator)));
+            result = new AdditionExpression<ComplexValue>(result,new ComplexValue(right));
             return this;
         }
 
-
-        private string GetConstantName()
+        public ComplexExpressionBuilder CreateMultiply(Expression<ComplexValue> left, Expression<ComplexValue> right)
+        {
+            result = new MultiplicationExpression<ComplexValue>(left, right);
+            return this;
+        }
+        public ComplexExpressionBuilder CreateMultiply(double left, double right)
+        {
+            result = new MultiplicationExpression<ComplexValue>(new ComplexValue(left),
+                 new ComplexValue(right));
+            return this;
+        }
+        public ComplexExpressionBuilder Multiply(double right)
         {
 
-            string currentConstantName = nextConstantName;
+            result = new MultiplicationExpression<ComplexValue>(result,
+                new ComplexValue(right));
+            return this;
 
-            UpdateNextConstantName();
-
-            return currentConstantName;
         }
-
-        private void UpdateNextConstantName()
+        public ComplexExpressionBuilder Multiply(string variable)
         {
-            // Incrementar el índice
-            constantIndex++;
-
-            // Obtener la letra correspondiente al índice
-            char letter = GetLetterFromIndex(constantIndex);
-
-            // Si se excedió el rango de letras, reiniciar el índice y concatenar el número
-            if (letter == '\0')
-            {
-                constantIndex = 1;
-                nextConstantName = "a1";
-            }
-            else
-            {
-                nextConstantName = letter.ToString();
-            }
+            result = new MultiplicationExpression<ComplexValue>(result,
+                 new ComplexValue(variable));
+            return this;
         }
-        private char GetLetterFromIndex(int index)
-        {
-            // Convertir el índice a un código ASCII de letra minúscula (97=a)
-            int letterCode = 96 + (index % 26);
 
-            // Si se excedió el rango de letras, devolver '\0'
-            if (letterCode > 122)
-            {
-                return '\0';
-            }
+        //public ComplexExpressionBuilder Divide(double realDenominator)
+        //{
+        //    result = new Divide(result, new RealConstant<RealNumber>(GetConstantName(), new RealNumber(realDenominator)));
+        //    return this;
+        //}
 
-            return (char)letterCode;
-        }
+
+        //private string GetConstantName()
+        //{
+
+        //    string currentConstantName = nextConstantName;
+
+        //    UpdateNextConstantName();
+
+        //    return currentConstantName;
+        //}
+
+        //private void UpdateNextConstantName()
+        //{
+        //    // Incrementar el índice
+        //    constantIndex++;
+
+        //    // Obtener la letra correspondiente al índice
+        //    char letter = GetLetterFromIndex(constantIndex);
+
+        //    // Si se excedió el rango de letras, reiniciar el índice y concatenar el número
+        //    if (letter == '\0')
+        //    {
+        //        constantIndex = 1;
+        //        nextConstantName = "a1";
+        //    }
+        //    else
+        //    {
+        //        nextConstantName = letter.ToString();
+        //    }
+        //}
+        //private char GetLetterFromIndex(int index)
+        //{
+        //    // Convertir el índice a un código ASCII de letra minúscula (97=a)
+        //    int letterCode = 96 + (index % 26);
+
+        //    // Si se excedió el rango de letras, devolver '\0'
+        //    if (letterCode > 122)
+        //    {
+        //        return '\0';
+        //    }
+
+        //    return (char)letterCode;
+        //}
     }
 }

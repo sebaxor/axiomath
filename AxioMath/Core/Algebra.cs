@@ -19,23 +19,7 @@ namespace AxioMath.Core
     {
         public abstract T Accept(IAlgebra<T> algebra);
     }
-
-    // Clase concreta para representar expresiones numéricas
-    public class NumberExpression<T> : Expression<T>
-    {
-        public T Value { get; }
-
-        public NumberExpression(T value)
-        {
-            Value = value;
-        }
-
-        public override T Accept(IAlgebra<T> algebra)
-        {
-            return algebra.Number(Value);
-        }
-        public override string ToString() => Value.ToString();
-    }
+     
 
     // Clase concreta para representar expresiones de suma
     public class AdditionExpression<T> : Expression<T>
@@ -107,7 +91,7 @@ namespace AxioMath.Core
             var rightValue = right.Accept(complexAlgebra);
 
             if (leftValue != null && !leftValue.IsVariable() && rightValue != null && !rightValue.IsVariable())
-                return new NumberExpression<ComplexValue>(new ComplexValue(complexAlgebra.Add(leftValue, rightValue)));
+                return new ComplexValue(complexAlgebra.Add(leftValue, rightValue));
             else
                 return new AdditionExpression<ComplexValue>(left, right);
         }
@@ -118,7 +102,7 @@ namespace AxioMath.Core
             var rightValue = right.Accept(complexAlgebra);
 
             if (leftValue != null && !leftValue.IsVariable() && rightValue != null && !rightValue.IsVariable())
-                return new NumberExpression<ComplexValue>(new ComplexValue(complexAlgebra.Multiply(leftValue, rightValue)));
+                return new ComplexValue(complexAlgebra.Multiply(leftValue, rightValue));
             else
                 return new MultiplicationExpression<ComplexValue>(left, right);
         }
@@ -132,7 +116,7 @@ namespace AxioMath.Core
 
 
 
-    public class ComplexValue
+    public class ComplexValue :Expression<ComplexValue>
     {
         public ComplexValue(ComplexValue complexValue)
         {
@@ -215,6 +199,11 @@ namespace AxioMath.Core
 
 
         public override string ToString() => VariableName ?? (ImaginaryPart == 0 && RealPart != null ? RealPart.Value.ToString() : $"{RealPart} + {ImaginaryPart}i");
+
+        public override ComplexValue Accept(IAlgebra<ComplexValue> algebra)
+        {
+            return algebra.Number(this);
+        }
     }
 }
 
