@@ -1,34 +1,28 @@
 ﻿
 using AxioMath.Core;
-using AxioMath.Geometry;
-using AxioMath.Solvers;
-using AxioMath.Utils;
-using System.Reflection.Metadata;
-
-var builder = new ExpressionBuilder();
-var term1 = builder.Constant(3).Multiply(2).Divide(6).Sum(20).Divide(2).Generate();
-var term2 = builder.Variable("x").Sum(5).Divide(2).Generate();
-var term3 = builder.Constant(3).Multiply(2).Divide(6).Sum(20).Divide(2).Generate();
-var expression = new Sum(term1, term2, term3);
-
-Console.WriteLine(expression);
-Console.WriteLine(expression.Evaluate());
-
-
-var resolv = ExpressionSolver.Solve(expression);
-Console.WriteLine("Solucion");
-Console.WriteLine(resolv.Evaluate());
 
 
 
-//Console.WriteLine(LatexConverter.ConvertToLatex(cocient.Evaluate()));
+
+IAlgebra<Expression<ComplexValue>> algebra = new ComplexExpressionsAlgebra();
 
 
-//var space = new Space(2);
-//var pointA = new Point(space,"A", 0,0); //Be point A
-//var pointB = new Point(space,"B",1,1);
-//var rectL = new Rect(space, "l", pointA, pointB);
 
-//Console.WriteLine(space.Points.Count);
-//Console.WriteLine(space.GeometricPlaces.Count);
+
+var suma = new AdditionExpression<Expression<ComplexValue>>(new NumberExpression<Expression<ComplexValue>>(new NumberExpression<ComplexValue>(new ComplexValue("x")))
+    , new NumberExpression<Expression<ComplexValue>>(new NumberExpression<ComplexValue>(new ComplexValue(5))));
+
+var producto = new MultiplicationExpression<Expression<ComplexValue>>(new NumberExpression<Expression<ComplexValue>>(new NumberExpression<ComplexValue>(new ComplexValue(10)))
+    , new NumberExpression<Expression<ComplexValue>>(new NumberExpression<ComplexValue>(new ComplexValue(15))));
+var expr5 = new AdditionExpression<Expression<ComplexValue>>(suma, producto);
+
+// Evaluación de la expresión
+Expression<ComplexValue> result = expr5.Accept(algebra);
+Console.WriteLine(result);  // Resultado: 20
+
+
+
+
+
+
 Console.ReadLine();

@@ -125,25 +125,7 @@ namespace AxioMath.Core
         public override string ToString() { return Value.ToString(); }
     }
 
-    public class ComplexNumber : INumber
-    {
-        public ComplexNumber(RealNumber realPart, RealNumber imaginaryPart)
-        {
-            this.RealPart = realPart;
-            this.ImaginaryPart = imaginaryPart;
-        }
-
-        public RealNumber RealPart { get; set; }
-        public RealNumber ImaginaryPart { get; set; }
-
-        public int SetLevel => 4;
-
-        double INumber.RealPart => RealPart.RealPart;
-
-        double? INumber.ImaginaryPart => throw new NotImplementedException();
-
-        public override string ToString() { return $"{RealPart} + {ImaginaryPart}i"; }
-    }
+   
 
 
 }

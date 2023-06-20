@@ -49,32 +49,32 @@ namespace AxioMath.Core
 
 
 
-    public class ComplexConstant : IExpression, IConstant
-    {
+    //public class ComplexConstant : IExpression, IConstant
+    //{
 
 
-        public ComplexConstant(string name, ComplexNumber value)
-        {
-            Name = name;
-            Value = value;
-        }
-        public string Name { get; set; }
-        public ComplexNumber Value { get; set; }
+    //    public ComplexConstant(string name, ComplexNumber value)
+    //    {
+    //        Name = name;
+    //        Value = value;
+    //    }
+    //    public string Name { get; set; }
+    //    public ComplexNumber Value { get; set; }
 
 
-        INumber IConstant.Value => this.Value;
+    //    INumber IConstant.Value => this.Value;
 
-        public string? Evaluate()
-        {
-            return Value?.ToString();
-        }
+    //    public string? Evaluate()
+    //    {
+    //        return Value?.ToString();
+    //    }
 
-        public override string ToString()
-        {
-            return Name;
-        }
+    //    public override string ToString()
+    //    {
+    //        return Name;
+    //    }
 
-    }
+    //}
 
 
     public class RealConstant<T> : IExpression, IConstant where T : INumber
