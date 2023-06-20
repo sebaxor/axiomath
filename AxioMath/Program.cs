@@ -8,7 +8,8 @@ using System.Reflection.Metadata;
 var builder = new ExpressionBuilder();
 var term1 = builder.Constant(3).Multiply(2).Divide(6).Sum(20).Divide(2).Generate();
 var term2 = builder.Variable("x").Sum(5).Divide(2).Generate();
-var term1 = builder.Constant(3).Multiply(2).Divide(6).Sum(20).Divide(2).Generate();
+var term3 = builder.Constant(3).Multiply(2).Divide(6).Sum(20).Divide(2).Generate();
+var expression = new Sum(term1, term2, term3);
 
 Console.WriteLine(expression);
 Console.WriteLine(expression.Evaluate());
