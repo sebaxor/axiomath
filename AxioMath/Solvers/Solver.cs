@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace AxioMath.Solvers
 {
-    public class ExpressionSolver
+    public class Solver
     {
 
 
@@ -47,14 +47,14 @@ namespace AxioMath.Solvers
             {
                 if (sum.Term1 is IVariable && sum.Term2 is IVariable)
                     return sum;
-                return SolveInternal(sum.Term1, sum.Term2, ExpressionSolver.Sum, (e1, e2) => new Sum(e1, e2));
+                return SolveInternal(sum.Term1, sum.Term2, Solver.Sum, (e1, e2) => new Sum(e1, e2));
             }
             else if (expression is Multiply mult)
             {
                 if (mult.Factor1 is IVariable && mult.Factor2 is IVariable)
                     return mult;
 
-                return SolveInternal(mult.Factor1, mult.Factor2, ExpressionSolver.Multiply, (e1, e2) => new Multiply(e1, e2));
+                return SolveInternal(mult.Factor1, mult.Factor2, Solver.Multiply, (e1, e2) => new Multiply(e1, e2));
 
             }
             else if (expression is Divide div)
@@ -62,7 +62,7 @@ namespace AxioMath.Solvers
                 if (div.Numerator is IVariable && div.Denominator is IVariable)
                     return div;
 
-                return SolveInternal(div.Numerator, div.Denominator, ExpressionSolver.Divide, (e1, e2) => new Divide(e1, e2));
+                return SolveInternal(div.Numerator, div.Denominator, Solver.Divide, (e1, e2) => new Divide(e1, e2));
 
             }
             else if (expression is Exponentiate expo)
@@ -70,7 +70,7 @@ namespace AxioMath.Solvers
                 if (expo.Base is IVariable && expo.Exponent is IVariable)
                     return expo;
 
-                return SolveInternal(expo.Base, expo.Exponent, ExpressionSolver.Exponentiate, (e1, e2) => new Exponentiate(e1, e2));
+                return SolveInternal(expo.Base, expo.Exponent, Solver.Exponentiate, (e1, e2) => new Exponentiate(e1, e2));
             }
             else
             {
@@ -79,9 +79,49 @@ namespace AxioMath.Solvers
         }
 
 
+        public static RationalNumber FindRational(INumber realValue)
+        {
+            var result = new RationalNumber(realValue.RealPart, 1);
+            
+
+            while (result.Numerator % 1 != 0)
+            {
+                result.Numerator *= 10;
+                result.Denominator *= 10;
+            }
+
+            decimal mcd = MCD(result.Numerator, result.Denominator);
+            result.Numerator /= mcd;
+            result.Denominator /= mcd;
+            return result;
+        }
+        public static decimal MCD(decimal a, decimal b)
+        {
+            while (b != 0)
+            {
+                decimal temp = b;
+                b = a % b;
+                a = temp;
+            }
+
+            return a;
+        }
+
         private static IExpression Sum(INumber term1, INumber term2)
         {
-            return new RealNumber(term1.RealPart + term2.RealPart);
+            RationalNumber num1 = term1 as RationalNumber;
+            RationalNumber num2 = term2 as RationalNumber;
+
+            if (num1 == null && num2== null)
+                return new RealNumber(term1.RealPart + term2.RealPart);
+            if (num1 == null)
+                num1 = FindRational(term1);
+            if(num2== null)
+                num2 = FindRational(term2);
+
+
+            return new RationalNumber(num1.Numerator * num2.Denominator + num2.Numerator * num1.Denominator, num1.Denominator * num2.Denominator);
+
         }
 
         private static IExpression Multiply(INumber factor1, INumber factor2)
@@ -91,7 +131,7 @@ namespace AxioMath.Solvers
 
         private static IExpression Exponentiate(INumber baseExp, INumber exponent)
         {
-            return new RealNumber(Math.Pow(baseExp.RealPart, exponent.RealPart));
+            return new RealNumber((decimal)Math.Pow((double)baseExp.RealPart,(double)exponent.RealPart));
         }
 
 

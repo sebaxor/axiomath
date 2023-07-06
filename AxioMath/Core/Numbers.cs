@@ -10,8 +10,8 @@ namespace AxioMath.Core
     public interface INumber : IExpression
     {
         int SetLevel { get; }
-        double RealPart { get; }
-        double? ImaginaryPart { get; }
+        decimal RealPart { get; }
+        decimal? ImaginaryPart { get; }
     }
 
 
@@ -26,9 +26,9 @@ namespace AxioMath.Core
 
         public int SetLevel => 0;
 
-        public double RealPart => Value;
+        public decimal RealPart => Value;
 
-        public double? ImaginaryPart => null;
+        public decimal? ImaginaryPart => null;
 
         public string? Evaluate()
         {
@@ -54,9 +54,9 @@ namespace AxioMath.Core
 
         public int SetLevel => 1;
 
-        public double RealPart => Value;
+        public decimal RealPart => Value;
 
-        public double? ImaginaryPart => null;
+        public decimal? ImaginaryPart => null;
 
         public string? Evaluate()
         {
@@ -67,6 +67,8 @@ namespace AxioMath.Core
 
     public class RationalNumber : INumber
     {
+
+        
         public RationalNumber(NaturalNumber value)
         {
             this.Numerator = value.Value;
@@ -78,20 +80,20 @@ namespace AxioMath.Core
             this.Numerator = value.Value;
             this.Denominator = 1;
         }
-        public RationalNumber(long numerator, long denominator)
+        public RationalNumber(decimal numerator, decimal denominator)
         {
             this.Numerator = numerator;
             this.Denominator = denominator;
 
         }
-        public double Numerator { get; set; }
+        public decimal Numerator { get; set; }
 
-        public double Denominator { get; set; }
+        public decimal Denominator { get; set; }
 
-        public double Value => Numerator / Denominator;
-        public double RealPart => Value;
+        public decimal Value => Numerator / Denominator;
+        public decimal RealPart => Value;
 
-        public double? ImaginaryPart => null;
+        public decimal? ImaginaryPart => null;
 
         public int SetLevel => 2;
 
@@ -120,17 +122,17 @@ namespace AxioMath.Core
             this.Value = value.Value;
 
         }
-        public RealNumber(double value)
+        public RealNumber(decimal value)
         {
             this.Value = value;
 
         }
-        public double Value { get; set; }
+        public decimal Value { get; set; }
 
         public int SetLevel => 3;
-        public double RealPart => Value;
+        public decimal RealPart => Value;
 
-        public double? ImaginaryPart => null;
+        public decimal? ImaginaryPart => null;
 
         public string? Evaluate()
         {
