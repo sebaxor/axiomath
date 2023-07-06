@@ -15,6 +15,7 @@ namespace AxioMath.Core
 
     }
 
+
     public class Variable<T> : IExpression, IVariable where T : INumber
     {
         public Variable(string name)
@@ -24,10 +25,7 @@ namespace AxioMath.Core
 
         public string Name { get; set; }
 
-        public string? Evaluate()
-        {
-            return Name;
-        }
+       
 
         public override string ToString()
         {
