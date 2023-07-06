@@ -9,75 +9,75 @@ namespace AxioMath.Solvers
         //TODO
         //El complex value debe ser expression
 
-        Expression<ComplexValue> result;
-        //string nextConstantName = "a";
-        //private int constantIndex = 0;
+        //Expression<ComplexValue> result;
+        ////string nextConstantName = "a";
+        ////private int constantIndex = 0;
 
 
-        public ComplexExpressionBuilder Constant(double realNumber)
-        {
-            result = new ComplexValue(realNumber);
-            return this;
-        }
-        public ComplexExpressionBuilder Variable(string name)
-        {
-            result = new ComplexValue(name);
-            return this;
-        }
+        //public ComplexExpressionBuilder Constant(double realNumber)
+        //{
+        //    result = new ComplexValue(realNumber);
+        //    return this;
+        //}
+        //public ComplexExpressionBuilder Variable(string name)
+        //{
+        //    result = new ComplexValue(name);
+        //    return this;
+        //}
 
-        public Expression<ComplexValue> Generate()
-        {
-            var res = result;
-            result = null;
-            return res;
-        }
+        //public Expression<ComplexValue> Generate()
+        //{
+        //    var res = result;
+        //    result = null;
+        //    return res;
+        //}
 
-        public ComplexExpressionBuilder CreateSum(double left, double right)
-        {
+        //public ComplexExpressionBuilder CreateSum(double left, double right)
+        //{
 
-            result = new AdditionExpression<ComplexValue>(new ComplexValue(left),
-               new ComplexValue(right));
-            return this;
-        }
+        //    result = new AdditionExpression<ComplexValue>(new ComplexValue(left),
+        //       new ComplexValue(right));
+        //    return this;
+        //}
 
-        public ComplexExpressionBuilder CreateSum(Expression<ComplexValue> left, Expression<ComplexValue> right)
-        {
+        //public ComplexExpressionBuilder CreateSum(Expression<ComplexValue> left, Expression<ComplexValue> right)
+        //{
 
-            result = new AdditionExpression<ComplexValue>(left, right);
-            return this;
-        }
+        //    result = new AdditionExpression<ComplexValue>(left, right);
+        //    return this;
+        //}
 
-        public ComplexExpressionBuilder Sum(double right)
-        {
-            result = new AdditionExpression<ComplexValue>(result,new ComplexValue(right));
-            return this;
-        }
+        //public ComplexExpressionBuilder Sum(double right)
+        //{
+        //    result = new AdditionExpression<ComplexValue>(result,new ComplexValue(right));
+        //    return this;
+        //}
 
-        public ComplexExpressionBuilder CreateMultiply(Expression<ComplexValue> left, Expression<ComplexValue> right)
-        {
-            result = new MultiplicationExpression<ComplexValue>(left, right);
-            return this;
-        }
-        public ComplexExpressionBuilder CreateMultiply(double left, double right)
-        {
-            result = new MultiplicationExpression<ComplexValue>(new ComplexValue(left),
-                 new ComplexValue(right));
-            return this;
-        }
-        public ComplexExpressionBuilder Multiply(double right)
-        {
+        //public ComplexExpressionBuilder CreateMultiply(Expression<ComplexValue> left, Expression<ComplexValue> right)
+        //{
+        //    result = new MultiplicationExpression<ComplexValue>(left, right);
+        //    return this;
+        //}
+        //public ComplexExpressionBuilder CreateMultiply(double left, double right)
+        //{
+        //    result = new MultiplicationExpression<ComplexValue>(new ComplexValue(left),
+        //         new ComplexValue(right));
+        //    return this;
+        //}
+        //public ComplexExpressionBuilder Multiply(double right)
+        //{
 
-            result = new MultiplicationExpression<ComplexValue>(result,
-                new ComplexValue(right));
-            return this;
+        //    result = new MultiplicationExpression<ComplexValue>(result,
+        //        new ComplexValue(right));
+        //    return this;
 
-        }
-        public ComplexExpressionBuilder Multiply(string variable)
-        {
-            result = new MultiplicationExpression<ComplexValue>(result,
-                 new ComplexValue(variable));
-            return this;
-        }
+        //}
+        //public ComplexExpressionBuilder Multiply(string variable)
+        //{
+        //    result = new MultiplicationExpression<ComplexValue>(result,
+        //         new ComplexValue(variable));
+        //    return this;
+        //}
 
         //public ComplexExpressionBuilder Divide(double realDenominator)
         //{

@@ -7,15 +7,12 @@ using System.Threading.Tasks;
 namespace AxioMath.Core
 {
 
-    public interface INumber
+    public interface INumber : IExpression
     {
         int SetLevel { get; }
         double RealPart { get; }
         double? ImaginaryPart { get; }
     }
-
-  
-
 
 
     public class NaturalNumber : INumber
@@ -32,6 +29,11 @@ namespace AxioMath.Core
         public double RealPart => Value;
 
         public double? ImaginaryPart => null;
+
+        public string? Evaluate()
+        {
+            return this.ToString();
+        }
 
         public override string ToString() { return Value.ToString(); }
     }
@@ -56,6 +58,10 @@ namespace AxioMath.Core
 
         public double? ImaginaryPart => null;
 
+        public string? Evaluate()
+        {
+            return this.ToString();
+        }
         public override string ToString() { return Value.ToString(); }
     }
 
@@ -89,6 +95,10 @@ namespace AxioMath.Core
 
         public int SetLevel => 2;
 
+        public string? Evaluate()
+        {
+            return this.ToString();
+        }
         public override string ToString() { return $"{Numerator}/{Denominator}"; }
     }
 
@@ -122,6 +132,10 @@ namespace AxioMath.Core
 
         public double? ImaginaryPart => null;
 
+        public string? Evaluate()
+        {
+            return this.ToString();
+        }
         public override string ToString() { return Value.ToString(); }
     }
 

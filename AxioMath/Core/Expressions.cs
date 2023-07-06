@@ -12,7 +12,7 @@ namespace AxioMath.Core
 
     public interface IExpression
     {
-        string? Evaluate();
+
     }
 
     public class Variable<T> : IExpression, IVariable where T : INumber
@@ -37,73 +37,14 @@ namespace AxioMath.Core
 
     }
 
-    public interface IConstant: IExpression
-    {
-        INumber Value { get; }
-    }
+   
 
     public interface IVariable
     {
-        
+        string Name { get; }
     }
 
 
-
-    //public class ComplexConstant : IExpression, IConstant
-    //{
-
-
-    //    public ComplexConstant(string name, ComplexNumber value)
-    //    {
-    //        Name = name;
-    //        Value = value;
-    //    }
-    //    public string Name { get; set; }
-    //    public ComplexNumber Value { get; set; }
-
-
-    //    INumber IConstant.Value => this.Value;
-
-    //    public string? Evaluate()
-    //    {
-    //        return Value?.ToString();
-    //    }
-
-    //    public override string ToString()
-    //    {
-    //        return Name;
-    //    }
-
-    //}
-
-
-    public class RealConstant<T> : IExpression, IConstant where T : INumber
-    {
-
-
-        public RealConstant(string name, T value)
-        {
-            Name = name;
-            Value = value;
-        }
-        public string Name { get; set; }
-        public T Value { get; set; }
-
-        public int? SetLevel => Value.SetLevel;
-
-        INumber IConstant.Value => Value;
-
-        public string? Evaluate()
-        {
-            return Value?.ToString();
-        }
-
-        public override string ToString()
-        {
-            return Name;
-        }
-
-    }
 
     public class Sum : IExpression
     {
@@ -122,10 +63,7 @@ namespace AxioMath.Core
         public IExpression Term1 { get; set; }
         public IExpression Term2 { get; set; }
 
-        public string? Evaluate()
-        {
-            return $"({Term1.Evaluate()})+({Term2.Evaluate()})";
-        }
+      
 
         public override string ToString()
         {
@@ -153,10 +91,7 @@ namespace AxioMath.Core
         public IExpression Factor1 { get; set; }
         public IExpression Factor2 { get; set; }
 
-        public string? Evaluate()
-        {
-            return $"({Factor1.Evaluate()})*({Factor2.Evaluate()})";
-        }
+       
 
         public override string ToString()
         {
@@ -178,10 +113,7 @@ namespace AxioMath.Core
         public IExpression Base { get; set; }
         public IExpression Exponent { get; set; }
 
-        public string? Evaluate()
-        {
-            return $"({Base.Evaluate()})^({Exponent.Evaluate()})";
-        }
+       
 
         public override string ToString()
         {
@@ -201,10 +133,7 @@ namespace AxioMath.Core
         public IExpression Numerator { get; set; }
         public IExpression Denominator { get; set; }
 
-        public string? Evaluate()
-        {
-            return $"({Numerator.Evaluate()})/({Denominator.Evaluate()})";
-        }
+      
 
         public override string ToString()
         {
@@ -223,10 +152,7 @@ namespace AxioMath.Core
         }
         public List<IExpression> Expressions { get; set; }
 
-        public string? Evaluate()
-        {
-            return string.Join("=", Expressions.Select(x => $"({x.Evaluate()})"));
-        }
+      
 
         public override string ToString()
         {

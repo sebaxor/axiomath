@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AxioMath.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,7 +30,7 @@ namespace AxioMath.Geometry
             return vertices.Select(x => x.Name).Aggregate((a, s) => $"{a}{s}");
         }
 
-        public Point BePoint(string name, params double[] coordinates)
+        public Point BePoint(string name, params IExpression[] coordinates)
         {
             var point = new Point(this, name, coordinates);
             Points.Add(name, point);

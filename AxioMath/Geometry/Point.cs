@@ -1,8 +1,10 @@
-﻿namespace AxioMath.Geometry
+﻿using AxioMath.Core;
+
+namespace AxioMath.Geometry
 {
     public class Point : IGeometricObject
     {
-        public Point(Space space, string name, params double[] coordinates)
+        public Point(Space space, string name, params IExpression[] coordinates)
         {
             Space = space;
             Dimension = coordinates.Length;
@@ -13,7 +15,7 @@
 
         public Space Space { get; }
         public int Dimension { get; }
-        public double[] Coordinates { get; }
+        public IExpression[] Coordinates { get; }
         public string Name { get; set; }
     }
 

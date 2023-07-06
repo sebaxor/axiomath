@@ -11,7 +11,35 @@ namespace AxioMath.Solvers
     public class ExpressionSolver
     {
 
-      
+
+
+        private static IExpression SolveInternal(IExpression expression1, IExpression expression2,
+            Func<INumber, INumber, IExpression> operation, Func<IExpression, IExpression, IExpression> builder)
+        {
+
+            IExpression? expr1 = expression1 as INumber;
+            IExpression? expr2 = expression2 as INumber;
+
+            if (expr1 != null && expr2 != null)
+                return Sum(expr1 as INumber, expr2 as INumber);
+
+
+            if (expr1 == null && (expression1 is Sum || expression1 is Multiply || expression1 is Exponentiate || expression1 is Divide))
+            {
+                expr1 = Solve(expression1);
+            }
+            if (expr2 == null && (expression2 is Sum || expression1 is Multiply || expression1 is Exponentiate || expression1 is Divide))
+            {
+                expr2 = Solve(expression2);
+            }
+
+            if (expr1 is INumber t1Const && expr2 is INumber t2Const)
+            {
+                return operation.Invoke(t1Const, t2Const);
+            }
+
+            return builder(expr1 ?? expression1, expr2 ?? expression2);
+        }
 
         public static IExpression Solve(IExpression expression)
         {
@@ -19,114 +47,30 @@ namespace AxioMath.Solvers
             {
                 if (sum.Term1 is IVariable && sum.Term2 is IVariable)
                     return sum;
-
-                IExpression term1 = sum.Term1 as IConstant;
-                IExpression term2 = sum.Term2 as IConstant;
-
-                if (term1 != null && term2 != null)
-                    return Sum(term1 as IConstant, term2 as IConstant);
-
-
-                if (term1 == null && (sum.Term1 is Sum || sum.Term1 is Multiply || sum.Term1 is Exponentiate || sum.Term1 is Divide))
-                {
-                    term1 = Solve(sum.Term1);
-                }
-                if (term2 == null && (sum.Term2 is Sum || sum.Term2 is Multiply || sum.Term2 is Exponentiate || sum.Term2 is Divide))
-                {
-                    term2 = Solve(sum.Term2);
-                }
-
-                if (term1 is IConstant t1Const && term2 is IConstant t2Const)
-                {
-                    return Sum(t1Const, t2Const);
-                }
-
-                return new Sum(term1??sum.Term1, term2 ?? sum.Term2);
+                return SolveInternal(sum.Term1, sum.Term2, ExpressionSolver.Sum, (e1, e2) => new Sum(e1, e2));
             }
             else if (expression is Multiply mult)
             {
-
                 if (mult.Factor1 is IVariable && mult.Factor2 is IVariable)
                     return mult;
 
-                IExpression term1 = mult.Factor1 as IConstant;
-                IExpression term2 = mult.Factor2 as IConstant;
+                return SolveInternal(mult.Factor1, mult.Factor2, ExpressionSolver.Multiply, (e1, e2) => new Multiply(e1, e2));
 
-                if (term1 != null && term2 != null)
-                    return Multiply(term1 as IConstant, term2 as IConstant);
-
-
-                if (term1 == null && (mult.Factor1 is Sum || mult.Factor1 is Multiply || mult.Factor1 is Exponentiate || mult.Factor1 is Divide))
-                {
-                    term1 = Solve(mult.Factor1);
-                }
-                if (term2 == null && (mult.Factor2 is Sum || mult.Factor2 is Multiply || mult.Factor2 is Exponentiate || mult.Factor2 is Divide))
-                {
-                    term2 = Solve(mult.Factor2);
-                }
-
-                if (term1 is IConstant t1Const && term2 is IConstant t2Const)
-                {
-                    return Multiply(t1Const, t2Const);
-                }
-
-                return new Multiply(term1 ?? mult.Factor1, term2 ?? mult.Factor2);
             }
             else if (expression is Divide div)
             {
                 if (div.Numerator is IVariable && div.Denominator is IVariable)
                     return div;
 
-                IExpression term1 = div.Numerator as IConstant;
-                IExpression term2 = div.Denominator as IConstant;
+                return SolveInternal(div.Numerator, div.Denominator, ExpressionSolver.Divide, (e1, e2) => new Divide(e1, e2));
 
-                if (term1 != null && term2 != null)
-                    return Divide(term1 as IConstant, term2 as IConstant);
-
-
-                if (term1 == null && (div.Numerator is Sum || div.Numerator is Multiply || div.Numerator is Exponentiate || div.Numerator is Divide))
-                {
-                    term1 = Solve(div.Numerator);
-                }
-                if (term2 == null && (div.Denominator is Sum || div.Denominator is Multiply || div.Denominator is Exponentiate || div.Denominator is Divide))
-                {
-                    term2 = Solve(div.Denominator);
-                }
-
-                if (term1 is IConstant t1Const && term2 is IConstant t2Const)
-                {
-                    return Divide(t1Const, t2Const);
-                }
-
-                return new Divide(term1 ?? div.Numerator, term2 ?? div.Denominator);
             }
             else if (expression is Exponentiate expo)
             {
                 if (expo.Base is IVariable && expo.Exponent is IVariable)
                     return expo;
 
-                IExpression term1 = expo.Base as IConstant;
-                IExpression term2 = expo.Exponent as IConstant;
-
-                if (term1 != null && term2 != null)
-                    return Exponentiate(term1 as IConstant, term2 as IConstant);
-
-
-                if (term1 == null && (expo.Base is Sum || expo.Base is Multiply || expo.Base is Exponentiate || expo.Base is Divide))
-                {
-                    term1 = Solve(expo.Base);
-                }
-                if (term2 == null && (expo.Exponent is Sum || expo.Exponent is Multiply || expo.Exponent is Exponentiate || expo.Exponent is Divide))
-                {
-                    term2 = Solve(expo.Exponent);
-                }
-
-                if (term1 is IConstant t1Const && term2 is IConstant t2Const)
-                {
-                    return Exponentiate(t1Const, t2Const);
-                }
-
-                return new Exponentiate(term1 ?? expo.Base, term2 ?? expo.Exponent);
+                return SolveInternal(expo.Base, expo.Exponent, ExpressionSolver.Exponentiate, (e1, e2) => new Exponentiate(e1, e2));
             }
             else
             {
@@ -135,25 +79,25 @@ namespace AxioMath.Solvers
         }
 
 
-        private static IExpression Sum(IConstant term1, IConstant term2)
+        private static IExpression Sum(INumber term1, INumber term2)
         {
-            return new RealConstant<RealNumber>("result", new RealNumber(term1.Value.RealPart + term2.Value.RealPart));
+            return new RealNumber(term1.RealPart + term2.RealPart);
         }
 
-        private static IExpression Multiply(IConstant factor1, IConstant factor2)
+        private static IExpression Multiply(INumber factor1, INumber factor2)
         {
-            return new RealConstant<RealNumber>("result", new RealNumber(factor1.Value.RealPart * factor2.Value.RealPart));
+            return new RealNumber(factor1.RealPart * factor2.RealPart);
         }
 
-        private static IExpression Exponentiate(IConstant baseExp, IConstant exponent)
+        private static IExpression Exponentiate(INumber baseExp, INumber exponent)
         {
-            return new RealConstant<RealNumber>("result", new RealNumber(Math.Pow(baseExp.Value.RealPart, exponent.Value.RealPart)));
+            return new RealNumber(Math.Pow(baseExp.RealPart, exponent.RealPart));
         }
 
 
-        private static IExpression Divide(IConstant numerator, IConstant denominator)
+        private static IExpression Divide(INumber numerator, INumber denominator)
         {
-            return new RealConstant<RealNumber>("result", new RealNumber(numerator.Value.RealPart / denominator.Value.RealPart));
+            return new RealNumber(numerator.RealPart / denominator.RealPart);
         }
 
 
