@@ -1,4 +1,6 @@
-﻿using AxioMath.Core;
+﻿using AxioMath.Core.Complex;
+using AxioMath.Core.Expression.Implementation;
+using AxioMath.Core.Operations;
 using System.Xml.Linq;
 
 namespace AxioMath.Solvers
@@ -35,7 +37,7 @@ namespace AxioMath.Solvers
         public ComplexExpressionBuilder CreateSum(double left, double right)
         {
 
-            result = new AdditionExpression<ComplexValue>(new ComplexValue(left),
+            result = new SumExpression<ComplexValue>(new ComplexValue(left),
                new ComplexValue(right));
             return this;
         }
@@ -43,13 +45,13 @@ namespace AxioMath.Solvers
         public ComplexExpressionBuilder CreateSum(Expression<ComplexValue> left, Expression<ComplexValue> right)
         {
 
-            result = new AdditionExpression<ComplexValue>(left, right);
+            result = new SumExpression<ComplexValue>(left, right);
             return this;
         }
 
         public ComplexExpressionBuilder Sum(double right)
         {
-            result = new AdditionExpression<ComplexValue>(result,new ComplexValue(right));
+            result = new SumExpression<ComplexValue>(result,new ComplexValue(right));
             return this;
         }
 

@@ -1,4 +1,8 @@
 ﻿using AxioMath.Core;
+using AxioMath.Core.Complex;
+using AxioMath.Core.Expression.Definition;
+using AxioMath.Core.Expression.Implementation;
+using AxioMath.Core.Operations;
 using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;

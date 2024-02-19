@@ -1,4 +1,4 @@
-﻿using AxioMath.Core;
+﻿using AxioMath.Core.Expression.Definition;
 
 namespace AxioMath.Geometry
 {

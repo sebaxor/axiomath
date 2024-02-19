@@ -1,5 +1,7 @@
-﻿
-using AxioMath.Core;
+﻿using AxioMath.Core.Complex;
+using AxioMath.Core.Expression.Definition;
+using AxioMath.Core.Expression.Implementation;
+using AxioMath.Core.Operations;
 using AxioMath.Solvers;
 
 IAlgebra<ComplexValue> algebra = new ComplexAlgebra();
@@ -7,9 +9,9 @@ IAlgebra<ComplexValue> algebra = new ComplexAlgebra();
 
 
 
-var suma = new AdditionExpression<ComplexValue>(new ComplexValue("x"), new ComplexValue(5));
+var suma = new SumExpression<ComplexValue>(new ComplexValue(2), new ComplexValue(5));
 var producto = new MultiplicationExpression<ComplexValue>(new ComplexValue(10), new ComplexValue(15));
-var expr5 = new AdditionExpression<ComplexValue>(suma, producto);
+var expr5 = new SumExpression<ComplexValue>(suma, producto);
 
 
 ComplexExpressionBuilder builder = new ComplexExpressionBuilder();

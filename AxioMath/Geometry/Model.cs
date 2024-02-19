@@ -1,4 +1,4 @@
-﻿using AxioMath.Core;
+﻿using AxioMath.Core.Expression.Definition;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
