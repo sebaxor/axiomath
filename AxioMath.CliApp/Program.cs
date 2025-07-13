@@ -9,7 +9,23 @@ class Program
         Console.WriteLine("=== AXIOMATH ===\n");
 
         // Construcción del lenguaje con símbolos básicos
-        var axiomStrings = new[] { "p", "(p → q)", "(q → r)", "(p ∨ s)", "(s → t)", "¬t" };
+        var axiomStrings = new[]
+{
+    "p",                // simple proposición (usada por Modus Ponens y conjunción)
+    "q",                // otra proposición base
+    "(p → q)",          // Modus Ponens
+    "(q → r)",          // cadena de implicación
+    "(p ∨ s)",          // disyunción
+    "(s → t)",          // complemento para disyunción
+    "¬t",               // premisa para Modus Tollens
+    "(q ∧ r)",          // premisa para eliminación de conjunción
+    "(¬r → ¬p)",         // para explorar contrarrecíproca con Modus Tollens
+        // Axiomas nuevos para Disjunction Elimination
+    "(a ∨ b)",
+    "(a → z)",
+    "(b → z)"
+};
+
 
         // Extrae todos los átomos usados (letras minúsculas que no son operadores)
         var atomNames = axiomStrings
@@ -28,7 +44,8 @@ class Program
             new ModusPonensRule(),
             new ModusTollensRule(),
             new DisjunctionEliminationRule(),
-            new ConjunctionIntroductionRule()
+            new ConjunctionIntroductionRule(),
+            new ConjunctionEliminationRule()
         };
 
         var system = new FormalSystem(language, axioms, rules);
