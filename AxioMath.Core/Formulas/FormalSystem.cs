@@ -15,9 +15,15 @@ public class FormalSystem
         DeductionRules = rules.ToList();
     }
 
-    public IEnumerable<Formula> DeriveTheorems()
+    public IEnumerable<Theorem> DeriveTheorems()
     {
-        var known = new HashSet<Formula>(Axioms);
+        var known = new Dictionary<Formula, Theorem>();
+        foreach (var ax in Axioms)
+        {
+            if (!known.ContainsKey(ax))
+                known[ax] = new Theorem(ax);
+        }
+
         var changed = true;
 
         while (changed)
@@ -25,17 +31,21 @@ public class FormalSystem
             changed = false;
             foreach (var rule in DeductionRules)
             {
-                var newFormulas = rule.Apply(known, Language).Where(f => !known.Contains(f)).ToList();
-                if (newFormulas.Any())
+                var results = rule
+                    .Apply(known.Keys, Language)
+                    .Where(r => !known.ContainsKey(r.conclusion))
+                    .ToList();
+
+                foreach (var (conclusion, premises) in results)
                 {
-                    foreach (var f in newFormulas)
-                        known.Add(f);
+                    var premiseTheorems = premises.Select(p => known[p]).ToList();
+                    known[conclusion] = new Theorem(conclusion, rule, premiseTheorems);
                     changed = true;
                 }
             }
         }
 
-        return known;
+        return known.Values;
     }
 }
 

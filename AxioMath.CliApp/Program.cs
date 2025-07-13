@@ -56,4 +56,4 @@ var theory = new FormalTheory(system);
 
 // Mostrar teoremas deducidos
 foreach (var t in theory.Theorems)
-    Console.WriteLine("Teorema: " + t);
+    Console.WriteLine("Teorema: " + t.Formula);
