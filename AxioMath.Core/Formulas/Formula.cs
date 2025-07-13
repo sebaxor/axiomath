@@ -25,6 +25,7 @@ public class Formula
 
     private static bool FormulaNodeEquals(FormulaNode a, FormulaNode b)
     {
+        
         if (a is AtomNode atomA && b is AtomNode atomB)
             return atomA.Name == atomB.Name;
         if (a is UnaryNode ua && b is UnaryNode ub)

@@ -28,7 +28,8 @@ public class DisjunctionEliminationRule : IDeductionRule
                 {
                     var C2 = ((BinaryNode)impl2.Root).Right;
 
-                    if (FormulaNodeEquals(C1, C2))
+                    if (C1 is not null && C2 is not null && FormulaNodeEquals(C1, C2))
+
                     {
                         var conclusion = new Formula(C1?.ToString() ?? string.Empty, C1!); // preserve original content from node
                         yield return (conclusion, new List<Formula> { disjunction, impl1, impl2 });

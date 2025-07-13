@@ -28,7 +28,7 @@ public class FormalSystem
         }
 
         var changed = true;
-
+        
         while (changed)
         {
             changed = false;
@@ -44,6 +44,7 @@ public class FormalSystem
                             t.Rule?.GetType() == rule.GetType()
                         ))
                     .ToList();
+                
 
                 foreach (var (conclusion, premises) in results)
                 {
@@ -54,6 +55,8 @@ public class FormalSystem
                     known.Add(new Theorem(conclusion, rule, premiseTheorems));
                     changed = true;
                 }
+                
+
             }
         }
 
