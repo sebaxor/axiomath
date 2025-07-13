@@ -8,7 +8,7 @@ namespace AxioMath.Logic.DeductionRules.Propositional;
   
 public class ModusPonensRule : IDeductionRule
 {
-    public IEnumerable<Formula> Apply(IEnumerable<Formula> premises, FormalLanguage language)
+    public IEnumerable<(Formula conclusion, IReadOnlyList<Formula> premises)> Apply(IEnumerable<Formula> premises, FormalLanguage language)
     {
         var list = premises.ToList();
 
@@ -21,11 +21,10 @@ public class ModusPonensRule : IDeductionRule
                     AreEquivalent(imp.Left, p.Root))
                 {
                     var content = Serialize(imp.Right);
-                   
 
                     var result = TryCreateFormula(language, content, imp.Right);
                     if (result != null)
-                        yield return result;
+                        yield return (result, new List<Formula> { p, implication });
                 }
             }
         }

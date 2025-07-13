@@ -2,6 +2,7 @@
 using AxioMath.Core.Formulas;
 using AxioMath.Core.Syntax;
 using AxioMath.Logic.DeductionRules.Propositional;
+using System.Linq;
 
 
 namespace AxioMath.Tests;
@@ -67,7 +68,12 @@ public class DeductionTests
         var theory = new FormalTheory(system);
 
         var q = lang.CreateFormula("q");
-        Assert.Contains(q, theory.Theorems);
+        var theorem = theory.Theorems.FirstOrDefault(t => t.Formula.Equals(q));
+        Assert.NotNull(theorem);
+        Assert.IsType<ModusPonensRule>(theorem!.Rule);
+        Assert.Equal(2, theorem.Premises.Count);
+        Assert.Contains(theorem.Premises, th => th.Formula.Equals(p));
+        Assert.Contains(theorem.Premises, th => th.Formula.Equals(imp));
     }
 
     [Fact]
@@ -79,7 +85,7 @@ public class DeductionTests
         var theory = new FormalTheory(system);
 
         var q = lang.CreateFormula("q");
-        Assert.DoesNotContain(q, theory.Theorems);
+        Assert.DoesNotContain(theory.Theorems, t => t.Formula.Equals(q));
     }
 
     [Fact]
