@@ -10,72 +10,27 @@ public class ModusPonensRule : IDeductionRule
     public IEnumerable<(Formula conclusion, IReadOnlyList<Formula> premises)> Apply(IEnumerable<Formula> premises, FormalLanguage language)
     {
         var list = premises.ToList();
-        var yielded = new HashSet<string>();
+        var seen = new HashSet<string>(); // evita duplicados por contenido
 
         foreach (var p in list)
         {
-            foreach (var implication in list)
+            foreach (var implication in list.Where(f => f.IsImplication()))
             {
-                if (implication.Root is BinaryNode imp &&
-                    imp.Operator == "→" &&
-                    AreEquivalent(imp.Left, p.Root))
+                var antecedent = implication.ImplicationAntecedent();
+                if (antecedent != null && p.Root.StructurallyEquals(antecedent))
                 {
-                    var content = Serialize(imp.Right);
-
-                    if (yielded.Contains(content))
-                        continue;
-
-                    var result = TryCreateFormula(language, content, imp.Right);
-                    if (result != null)
+                    var conclusionNode = implication.ImplicationConsequent();
+                    if (conclusionNode is not null)
                     {
-                        yielded.Add(content);
-                        yield return (result, new List<Formula> { p, implication });
+                        var conclusion = FormulaFactory.TryCreateFromNode(conclusionNode, language);
+                        if (conclusion != null && seen.Add(conclusion.Content))
+                        {
+                            yield return (conclusion, new List<Formula> { p, implication });
+                        }
                     }
                 }
             }
         }
     }
 
-
-    private Formula? TryCreateFormula(FormalLanguage language, string content, FormulaNode root)
-    {
-        try
-        {
-            if (language.BelongsToLanguage(content))
-                return new Formula(content, root);
-            else
-                Console.WriteLine($"Skipped invalid formula: {content}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error creating formula from: {content} → {ex.Message}");
-        }
-
-        return null;
-    }
-
-    private bool AreEquivalent(FormulaNode a, FormulaNode b)
-    {
-        if (a is AtomNode atomA && b is AtomNode atomB)
-            return atomA.Name == atomB.Name;
-        if (a is UnaryNode una && b is UnaryNode unb)
-            return una.Operator == unb.Operator && AreEquivalent(una.Operand, unb.Operand);
-        if (a is BinaryNode bina && b is BinaryNode binb)
-            return bina.Operator == binb.Operator &&
-                   AreEquivalent(bina.Left, binb.Left) &&
-                   AreEquivalent(bina.Right, binb.Right);
-        return false;
-    }
-
-    private string Serialize(FormulaNode node)
-    {
-        return node switch
-        {
-            AtomNode a => a.Name,
-            UnaryNode u => $"{u.Operator}{Serialize(u.Operand)}",
-            BinaryNode b => $"({Serialize(b.Left)} {b.Operator} {Serialize(b.Right)})",
-            _ => throw new NotSupportedException()
-        };
-    }
 }
-

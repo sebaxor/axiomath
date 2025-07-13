@@ -12,56 +12,29 @@ public class HypotheticalSyllogismRule : IDeductionRule
 {
     public IEnumerable<(Formula conclusion, IReadOnlyList<Formula> premises)> Apply(IEnumerable<Formula> premises, FormalLanguage language)
     {
-        var formulas = premises.ToList();
+        var list = premises.Where(f => f.IsImplication()).ToList();
 
-        for (int i = 0; i < formulas.Count; i++)
+        foreach (var first in list)
         {
-            for (int j = 0; j < formulas.Count; j++)
+            var firstAnte = first.ImplicationAntecedent();
+            var firstCons = first.ImplicationConsequent();
+
+            foreach (var second in list)
             {
-                if (i == j) continue;
+                var secondAnte = second.ImplicationAntecedent();
+                var secondCons = second.ImplicationConsequent();
 
-                var f1 = formulas[i];
-                var f2 = formulas[j];
-
-                if (f1.Root is not BinaryNode imp1 || imp1.Operator != OperatorSymbols.Implies) continue;
-                if (f2.Root is not BinaryNode imp2 || imp2.Operator != OperatorSymbols.Implies) continue;
-
-                if (AreEquivalent(imp1.Right, imp2.Left))
+                if (firstCons is not null && secondAnte is not null &&
+                    firstCons.StructurallyEquals(secondAnte) &&
+                    firstAnte is not null && secondCons is not null)
                 {
-                    var newRoot = new BinaryNode(OperatorSymbols.Implies, imp1.Left, imp2.Right);
-                    var content = $"({Serialize(imp1.Left)} {OperatorSymbols.Implies} {Serialize(imp2.Right)})";
+                    var result = FormulaFactory.TryCreateFromNode(
+                        new BinaryNode("→", firstAnte, secondCons), language);
 
-                    if (language.BelongsToLanguage(content))
-                    {
-                        var result = new Formula(content, newRoot);
-                        yield return (result, new List<Formula> { f1, f2 });
-                    }
+                    if (result != null)
+                        yield return (result, new List<Formula> { first, second });
                 }
             }
         }
-    }
-
-    private static bool AreEquivalent(FormulaNode a, FormulaNode b)
-    {
-        if (a is AtomNode atomA && b is AtomNode atomB)
-            return atomA.Name == atomB.Name;
-        if (a is UnaryNode una && b is UnaryNode unb)
-            return una.Operator == unb.Operator && AreEquivalent(una.Operand, unb.Operand);
-        if (a is BinaryNode bina && b is BinaryNode binb)
-            return bina.Operator == binb.Operator &&
-                   AreEquivalent(bina.Left, binb.Left) &&
-                   AreEquivalent(bina.Right, binb.Right);
-        return false;
-    }
-
-    private static string Serialize(FormulaNode node)
-    {
-        return node switch
-        {
-            AtomNode a => a.Name,
-            UnaryNode u => $"{u.Operator}{Serialize(u.Operand)}",
-            BinaryNode b => $"({Serialize(b.Left)} {b.Operator} {Serialize(b.Right)})",
-            _ => throw new NotSupportedException()
-        };
     }
 }
