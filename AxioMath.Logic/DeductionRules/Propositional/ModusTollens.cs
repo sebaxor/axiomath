@@ -6,7 +6,7 @@ namespace AxioMath.Logic.DeductionRules.Propositional;
 
 public class ModusTollensRule : IDeductionRule
 {
-    public IEnumerable<Formula> Apply(IEnumerable<Formula> premises, FormalLanguage language)
+    public IEnumerable<(Formula conclusion, IReadOnlyList<Formula> premises)> Apply(IEnumerable<Formula> premises, FormalLanguage language)
     {
         var list = premises.ToList();
 
@@ -25,7 +25,7 @@ public class ModusTollensRule : IDeductionRule
 
                         var result = TryCreateFormula(language, content, negatedP);
                         if (result != null)
-                            yield return result;
+                            yield return (result, new List<Formula> { implication, negatedQ });
                     }
                 }
             }

@@ -15,7 +15,7 @@ public class FormalSystem
         DeductionRules = rules.ToList();
     }
 
-    public IEnumerable<Formula> DeriveTheorems()
+    public IEnumerable<Theorem> DeriveTheorems()
     {
         // Permitimos múltiples deducciones por fórmula si son por distintas reglas
         var known = new List<Theorem>();
