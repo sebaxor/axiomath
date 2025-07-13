@@ -2,7 +2,7 @@
 using AxioMath.Core.Syntax;
 using AxioMath.Logic.DeductionRules.Propositional;
 
-// Definición de símbolos terminales
+// Símbolos
 var not = new Symbol("¬", true);
 var and = new Symbol("∧", true);
 var or = new Symbol("∨", true);
@@ -14,17 +14,17 @@ var rparen = new Symbol(")", true);
 var p = new Symbol("p", true);
 var q = new Symbol("q", true);
 var r = new Symbol("r", true);
+var s = new Symbol("s", true);
 
-// Definición de símbolos no terminales
 var atom = new Symbol("Atom", false);
 var formula = new Symbol("Formula", false);
 
-var grammar = new Grammar(formula);
-
 // Gramática
+var grammar = new Grammar(formula);
 grammar.AddRule(atom, new[] { p }, RuleInterpretation.Atom);
 grammar.AddRule(atom, new[] { q }, RuleInterpretation.Atom);
 grammar.AddRule(atom, new[] { r }, RuleInterpretation.Atom);
+grammar.AddRule(atom, new[] { s }, RuleInterpretation.Atom);
 
 grammar.AddRule(formula, new[] { atom }, RuleInterpretation.Atom);
 grammar.AddRule(formula, new[] { not, formula }, RuleInterpretation.Unary, "¬");
@@ -33,27 +33,29 @@ grammar.AddRule(formula, new[] { lparen, formula, or, formula, rparen }, RuleInt
 grammar.AddRule(formula, new[] { lparen, formula, implies, formula, rparen }, RuleInterpretation.Binary, "→");
 grammar.AddRule(formula, new[] { lparen, formula, iff, formula, rparen }, RuleInterpretation.Binary, "↔");
 
-// Lenguaje
 var language = new FormalLanguage(grammar);
 
-// Axiomas que permiten probar Modus Ponens y Modus Tollens
-var f1 = language.CreateFormula("(p → q)");
-var f2 = language.CreateFormula("p");      // Para activar Modus Ponens
-var f3 = language.CreateFormula("¬q");     // Para activar Modus Tollens
+var axioms = new[]
+{
+    language.CreateFormula("(p → q)"),      // MP
+    language.CreateFormula("p"),            // MP
+    language.CreateFormula("¬q"),           // MT
+    language.CreateFormula("(p ∨ r)"),      // ∨E
+    language.CreateFormula("(r → s)"),      // ∨E
+    language.CreateFormula("(p → s)")       // ∨E
+};
 
-var axioms = new[] { f1, f2, f3 };
-
-// Reglas disponibles
+// Reglas
 var rules = new IDeductionRule[]
 {
     new ModusPonensRule(),
-    new ModusTollensRule()
+    new ModusTollensRule(),
+    new DisjunctionEliminationRule()
 };
 
-// Sistema y teoría
 var system = new FormalSystem(language, axioms, rules);
 var theory = new FormalTheory(system);
 
-// Mostrar teoremas deducidos
+// Mostrar resultados
 foreach (var t in theory.Theorems)
-    Console.WriteLine("Teorema: " + t);
+    Console.WriteLine($"Teorema: {t}");

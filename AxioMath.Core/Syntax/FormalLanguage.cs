@@ -19,7 +19,7 @@ public class FormalLanguage
     public Formula CreateFormula(string input)
     {
         if (!BelongsToLanguage(input))
-            throw new ArgumentException("Input is not a valid formula in this language.");
+            throw new ArgumentException($"Input is not a valid formula in this language. {input}");
 
         var parser = new GrammarParser(Grammar);
         var node = parser.Parse(input);

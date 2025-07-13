@@ -1,7 +1,7 @@
-
 using AxioMath.Core.Syntax;
 
 namespace AxioMath.Core.Formulas;
+
 public class FormalSystem
 {
     public FormalLanguage Language { get; }
@@ -17,7 +17,16 @@ public class FormalSystem
 
     public IEnumerable<Formula> DeriveTheorems()
     {
-        var known = new HashSet<Formula>(Axioms);
+        // Permitimos múltiples deducciones por fórmula si son por distintas reglas
+        var known = new List<Theorem>();
+
+        // Registrar axiomas
+        foreach (var ax in Axioms)
+        {
+            if (!known.Any(t => t.Formula.Equals(ax)))
+                known.Add(new Theorem(ax));
+        }
+
         var changed = true;
 
         while (changed)
@@ -25,11 +34,24 @@ public class FormalSystem
             changed = false;
             foreach (var rule in DeductionRules)
             {
-                var newFormulas = rule.Apply(known, Language).Where(f => !known.Contains(f)).ToList();
-                if (newFormulas.Any())
+                var currentFormulas = known.Select(t => t.Formula).ToList();
+
+                var results = rule
+                    .Apply(currentFormulas, Language)
+                    .Where(result =>
+                        !known.Any(t =>
+                            t.Formula.Equals(result.conclusion) &&
+                            t.Rule?.GetType() == rule.GetType()
+                        ))
+                    .ToList();
+
+                foreach (var (conclusion, premises) in results)
                 {
-                    foreach (var f in newFormulas)
-                        known.Add(f);
+                    var premiseTheorems = premises
+                        .Select(p => known.First(t => t.Formula.Equals(p)))
+                        .ToList();
+
+                    known.Add(new Theorem(conclusion, rule, premiseTheorems));
                     changed = true;
                 }
             }
@@ -38,4 +60,3 @@ public class FormalSystem
         return known;
     }
 }
-
