@@ -4,12 +4,13 @@ using AxioMath.Core.Syntax;
 
 
 namespace AxioMath.Logic.Propositional.DeductionRules;
-  
+
 public class ModusPonensRule : IDeductionRule
 {
     public IEnumerable<(Formula conclusion, IReadOnlyList<Formula> premises)> Apply(IEnumerable<Formula> premises, FormalLanguage language)
     {
         var list = premises.ToList();
+        var yielded = new HashSet<string>();
 
         foreach (var p in list)
         {
@@ -21,13 +22,20 @@ public class ModusPonensRule : IDeductionRule
                 {
                     var content = Serialize(imp.Right);
 
+                    if (yielded.Contains(content))
+                        continue;
+
                     var result = TryCreateFormula(language, content, imp.Right);
                     if (result != null)
+                    {
+                        yielded.Add(content);
                         yield return (result, new List<Formula> { p, implication });
+                    }
                 }
             }
         }
     }
+
 
     private Formula? TryCreateFormula(FormalLanguage language, string content, FormulaNode root)
     {
