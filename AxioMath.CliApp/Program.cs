@@ -41,10 +41,16 @@ class Program
 
 
 
-        var rules = new IDeductionRule[] { new ModusPonensRule(),
-        new ModusTollensRule(), new DisjunctionEliminationRule(), new ConjunctionIntroductionRule(), new ConjunctionEliminationRule(), new HypotheticalSyllogismRule() };
-
-
+        var rules = new IDeductionRule[]
+ {
+    new ModusPonensRule(),
+    new ModusTollensRule(),
+    new DisjunctionEliminationRule(),
+    new ConjunctionIntroductionRule(),
+    new ConjunctionEliminationRule(),
+    new HypotheticalSyllogismRule(),
+    new AdditionRule() 
+ };
         var system = new FormalSystem(language, axioms, rules);
         var theory = new FormalTheory(system);
 
