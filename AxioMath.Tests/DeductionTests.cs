@@ -1,6 +1,8 @@
 ﻿
+using AxioMath.Core.Formulas;
 using AxioMath.Core.Syntax;
-using FormalSystems;
+using AxioMath.Logic.DeductionRules.Propositional;
+
 
 namespace AxioMath.Tests;
 
