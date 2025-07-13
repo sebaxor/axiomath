@@ -1,4 +1,4 @@
-namespace AxioMath.Logic.DeductionRules.Propositional;
+namespace AxioMath.Logic.Propositional;
 /// <summary>
 /// Contains all standard operator symbols used in formulas.
 /// </summary>

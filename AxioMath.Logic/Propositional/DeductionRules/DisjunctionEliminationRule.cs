@@ -1,9 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
 using AxioMath.Core.Formulas;
 using AxioMath.Core.Syntax;
 
-namespace AxioMath.Logic.DeductionRules.Propositional;
+namespace AxioMath.Logic.Propositional.DeductionRules;
 
 /// <summary>
 /// Implements the ∨ Elimination rule: from A ∨ B, A → C, and B → C, infer C.

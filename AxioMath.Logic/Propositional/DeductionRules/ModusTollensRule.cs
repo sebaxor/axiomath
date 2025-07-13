@@ -2,29 +2,31 @@
 using AxioMath.Core.Formulas;
 using AxioMath.Core.Syntax;
 
+namespace AxioMath.Logic.Propositional.DeductionRules;
 
-namespace AxioMath.Logic.DeductionRules.Propositional;
-
-  
-public class ModusPonensRule : IDeductionRule
+public class ModusTollensRule : IDeductionRule
 {
     public IEnumerable<(Formula conclusion, IReadOnlyList<Formula> premises)> Apply(IEnumerable<Formula> premises, FormalLanguage language)
     {
         var list = premises.ToList();
 
-        foreach (var p in list)
+        foreach (var implication in list)
         {
-            foreach (var implication in list)
+            if (implication.Root is BinaryNode imp && imp.Operator == "→")
             {
-                if (implication.Root is BinaryNode imp &&
-                    imp.Operator == "→" &&
-                    AreEquivalent(imp.Left, p.Root))
+                foreach (var negatedQ in list)
                 {
-                    var content = Serialize(imp.Right);
+                    if (negatedQ.Root is UnaryNode neg &&
+                        neg.Operator == "¬" &&
+                        AreEquivalent(imp.Right, neg.Operand))
+                    {
+                        var negatedP = new UnaryNode("¬", imp.Left);
+                        var content = Serialize(negatedP);
 
-                    var result = TryCreateFormula(language, content, imp.Right);
-                    if (result != null)
-                        yield return (result, new List<Formula> { p, implication });
+                        var result = TryCreateFormula(language, content, negatedP);
+                        if (result != null)
+                            yield return (result, new List<Formula> { implication, negatedQ });
+                    }
                 }
             }
         }

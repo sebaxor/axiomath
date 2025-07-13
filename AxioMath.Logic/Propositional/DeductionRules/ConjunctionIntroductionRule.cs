@@ -1,9 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
 using AxioMath.Core.Formulas;
 using AxioMath.Core.Syntax;
 
-namespace AxioMath.Logic.DeductionRules.Propositional;
+namespace AxioMath.Logic.Propositional.DeductionRules;
 
 /// <summary>
 /// Implements the ∧ Introduction rule: from A and B, infer (A ∧ B).
