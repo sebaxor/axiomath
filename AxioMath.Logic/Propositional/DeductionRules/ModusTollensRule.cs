@@ -17,11 +17,11 @@ public class ModusTollensRule : IDeductionRule
             if (ant is null || con is null)
                 continue;
 
-            var notQ = FormulaFactory.TryCreateFromNode(new UnaryNode("¬", con), language);
+            var notQ = FormulaFactory.TryCreateFromNode(new UnaryNode(OperatorSymbols.Not, con), language);
             if (notQ == null || !list.Any(p => p.Root.StructurallyEquals(notQ.Root)))
                 continue;
 
-            var notPNode = new UnaryNode("¬", ant);
+            var notPNode = new UnaryNode(OperatorSymbols.Not, ant);
             var notP = FormulaFactory.TryCreateFromNode(notPNode, language);
 
             if (notP is not null)

@@ -29,7 +29,7 @@ public class HypotheticalSyllogismRule : IDeductionRule
                     firstAnte is not null && secondCons is not null)
                 {
                     var result = FormulaFactory.TryCreateFromNode(
-                        new BinaryNode("→", firstAnte, secondCons), language);
+                        new BinaryNode(OperatorSymbols.Implies, firstAnte, secondCons), language);
 
                     if (result != null)
                         yield return (result, new List<Formula> { first, second });

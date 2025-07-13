@@ -1,10 +1,12 @@
 // Core/Extensions/FormulaExtensions.cs
+using AxioMath.Logic.Propositional;
+
 namespace AxioMath.Core.Formulas;
 
 public static class FormulaExtensions
 {
     public static bool IsImplication(this Formula formula)
-        => formula.Root is BinaryNode b && b.Operator == "→";
+        => formula.Root is BinaryNode b && b.Operator == OperatorSymbols.Implies;
 
     public static FormulaNode? ImplicationAntecedent(this Formula formula)
         => formula.IsImplication() ? ((BinaryNode)formula.Root).Left : null;
