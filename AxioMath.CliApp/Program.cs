@@ -10,21 +10,23 @@ class Program
 
         // Construcción del lenguaje con símbolos básicos
         var axiomStrings = new[]
-{
-    "p",                // simple proposición (usada por Modus Ponens y conjunción)
-    "q",                // otra proposición base
-    "(p → q)",          // Modus Ponens
-    "(q → r)",          // cadena de implicación
-    "(p ∨ s)",          // disyunción
-    "(s → t)",          // complemento para disyunción
-    "¬t",               // premisa para Modus Tollens
-    "(q ∧ r)",          // premisa para eliminación de conjunción
-    "(¬r → ¬p)",         // para explorar contrarrecíproca con Modus Tollens
-        // Axiomas nuevos para Disjunction Elimination
+        {
+    "p",
+    "q",
+    "(p → q)",
+    "(q → r)",
+    "(r → s)",
+    "(s → t)",
+    "(p ∨ s)",
+    "(s → t)",
+    "¬t",
+    "(q ∧ r)",
+    "(¬r → ¬p)",
     "(a ∨ b)",
     "(a → z)",
     "(b → z)"
 };
+
 
 
         // Extrae todos los átomos usados (letras minúsculas que no son operadores)
@@ -39,14 +41,9 @@ class Program
 
 
 
-        var rules = new IDeductionRule[]
-        {
-            new ModusPonensRule(),
-            new ModusTollensRule(),
-            new DisjunctionEliminationRule(),
-            new ConjunctionIntroductionRule(),
-            new ConjunctionEliminationRule()
-        };
+        var rules = new IDeductionRule[] { new ModusPonensRule(),
+        new ModusTollensRule(), new DisjunctionEliminationRule(), new ConjunctionIntroductionRule(), new ConjunctionEliminationRule(), new HypotheticalSyllogismRule() };
+
 
         var system = new FormalSystem(language, axioms, rules);
         var theory = new FormalTheory(system);
@@ -55,12 +52,8 @@ class Program
         foreach (var ax in axioms)
             Console.WriteLine($"  • {ax}");
 
-        Console.WriteLine("\n[Teoremas Derivados]");
-        foreach (var th in theory.Theorems.Where(t => t.Rule != null))
-        {
-            Console.WriteLine(th.ToString());
-            Console.WriteLine(new string('-', 40));
-        }
+        Console.WriteLine("\n[Teoremas Derivados por Regla]");
+        theory.PrintTheoremsByRule();
 
 
 

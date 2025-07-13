@@ -1,7 +1,7 @@
 
-using System.Linq;
 
 namespace AxioMath.Core.Formulas;
+
 public class FormalTheory
 {
     public FormalSystem System { get; }
@@ -13,5 +13,27 @@ public class FormalTheory
     }
 
     public bool Proves(Formula formula) => Theorems.Any(t => t.Formula.Equals(formula));
+
+    public void PrintTheoremsByRule()
+    {
+        var grouped = Theorems
+            .Where(t => t.Rule != null)
+            .GroupBy(t => t.Rule!.GetType().Name)
+            .OrderBy(g => g.Key);
+
+        foreach (var group in grouped)
+        {
+            Console.WriteLine($"== {group.Key} ==");
+
+            foreach (var theorem in group)
+            {
+                Console.WriteLine($"• {theorem}");
+            }
+
+            Console.WriteLine();
+        }
+    }
+
+
 }
 

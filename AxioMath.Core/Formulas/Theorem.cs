@@ -19,31 +19,16 @@ public class Theorem
     }
     public override string ToString()
     {
-        var sb = new StringBuilder();
-        sb.AppendLine($"Formula: {Formula}");
-
-        if (Rule != null)
-        {
-            sb.AppendLine($"Rule: {Rule.GetType().Name}");
-        }
-        else
-        {
-            sb.AppendLine("Rule: (axiom or initial)");
-        }
-
         if (Premises.Count > 0)
         {
-            sb.AppendLine("Premises:");
-            for (int i = 0; i < Premises.Count; i++)
-            {
-                sb.AppendLine($"  [{i + 1}] {Premises[i].Formula}");
-            }
+            var premisesJoined = string.Join(", ", Premises.Select(p => p.Formula.ToString()));
+            return $"{premisesJoined} ⊢ {Formula}";
         }
         else
         {
-            sb.AppendLine("Premises: none");
+            return $"⊢ {Formula}  (axiom)";
         }
-
-        return sb.ToString();
     }
+
+
 }
