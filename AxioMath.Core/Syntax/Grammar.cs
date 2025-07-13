@@ -3,6 +3,7 @@ using AxioMath.Core.Syntax;
 
 
 namespace AxioMath.Core.Syntax;
+
 public class Grammar
 {
     public HashSet<Symbol> NonTerminals { get; } = new();
@@ -18,9 +19,6 @@ public class Grammar
         StartSymbol = startSymbol;
         NonTerminals.Add(startSymbol);
     }
-
-    public void AddRule(Symbol left, params Symbol[] right)
-       => AddRule(left, right, null, null);
 
     public void AddRule(Symbol left, Symbol[] right, RuleInterpretation? interpretation = null, string? op = null)
     {

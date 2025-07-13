@@ -12,5 +12,5 @@ public class Symbol
 
     public override string ToString() => Value;
     public override bool Equals(object? obj) => obj is Symbol s && s.Value == Value && s.IsTerminal == IsTerminal;
-    public override int GetHashCode() => HashCode.Combine(Value, IsTerminal);
+    
 }

@@ -6,7 +6,7 @@ public enum RuleInterpretation
     Atom,
     Unary,
     Binary,
-    Custom  // para casos extendidos
+
 }
 public class ProductionRule
 {

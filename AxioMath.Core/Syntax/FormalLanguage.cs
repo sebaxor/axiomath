@@ -1,18 +1,8 @@
 ﻿using AxioMath.Core.Formulas;
 using AxioMath.Core.Parsers;
-using AxioMath.Core.Syntax;
 
 namespace AxioMath.Core.Syntax;
 
-public class Alphabet
-{
-    public IReadOnlyCollection<string> Symbols { get; }
-
-    public Alphabet(IEnumerable<string> symbols)
-    {
-        Symbols = symbols.ToHashSet();
-    }
-}
 
 
 public class FormalLanguage
