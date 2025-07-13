@@ -1,0 +1,1199 @@
+﻿--- CONTEXTO DE AXIOMATH ---
+
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.CliApp\AxioMath.CliApp.csproj ---
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\AxioMath.Core\AxioMath.Core.csproj" />
+    <ProjectReference Include="..\AxioMath.Logic\AxioMath.Logic.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.CliApp\Program.cs ---
+
+using AxioMath.Core.Formulas;
+using AxioMath.Core.Syntax;
+using AxioMath.Logic.DeductionRules.Propositional;
+
+
+
+var language = PropositionalLanguageBuilder.Build();
+
+var axioms = new[]
+{
+    language.CreateFormula("(p → q)"),      // MP
+    language.CreateFormula("p"),            // MP
+    language.CreateFormula("¬q"),           // MT
+    language.CreateFormula("(p ∨ r)"),      // ∨E
+    language.CreateFormula("(r → s)"),      // ∨E
+    language.CreateFormula("(p → s)")       // ∨E
+};
+
+// Reglas
+var rules = new IDeductionRule[]
+{
+    new ModusPonensRule(),
+    new ModusTollensRule(),
+    new DisjunctionEliminationRule()
+};
+
+var system = new FormalSystem(language, axioms, rules);
+var theory = new FormalTheory(system);
+
+// Mostrar resultados
+foreach (var t in theory.Theorems)
+    Console.WriteLine($"Teorema: {t}");
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\AxioMath.Core.csproj ---
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Formulas\FormalSystem.cs ---
+
+using AxioMath.Core.Syntax;
+
+namespace AxioMath.Core.Formulas;
+
+public class FormalSystem
+{
+    public FormalLanguage Language { get; }
+    public IReadOnlyCollection<Formula> Axioms { get; }
+    public IReadOnlyCollection<IDeductionRule> DeductionRules { get; }
+
+    public FormalSystem(FormalLanguage language, IEnumerable<Formula> axioms, IEnumerable<IDeductionRule> rules)
+    {
+        Language = language;
+        Axioms = axioms.ToList();
+        DeductionRules = rules.ToList();
+    }
+
+    public IEnumerable<Theorem> DeriveTheorems()
+    {
+        // Permitimos mÃºltiples deducciones por fÃ³rmula si son por distintas reglas
+        var known = new List<Theorem>();
+
+        // Registrar axiomas
+        foreach (var ax in Axioms)
+        {
+            if (!known.Any(t => t.Formula.Equals(ax)))
+                known.Add(new Theorem(ax));
+        }
+
+        var changed = true;
+
+        while (changed)
+        {
+            changed = false;
+            foreach (var rule in DeductionRules)
+            {
+                var currentFormulas = known.Select(t => t.Formula).ToList();
+
+                var results = rule
+                    .Apply(currentFormulas, Language)
+                    .Where(result =>
+                        !known.Any(t =>
+                            t.Formula.Equals(result.conclusion) &&
+                            t.Rule?.GetType() == rule.GetType()
+                        ))
+                    .ToList();
+
+                foreach (var (conclusion, premises) in results)
+                {
+                    var premiseTheorems = premises
+                        .Select(p => known.First(t => t.Formula.Equals(p)))
+                        .ToList();
+
+                    known.Add(new Theorem(conclusion, rule, premiseTheorems));
+                    changed = true;
+                }
+            }
+        }
+
+        return known;
+    }
+}
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Formulas\FormalTheory.cs ---
+
+
+using System.Linq;
+
+namespace AxioMath.Core.Formulas;
+public class FormalTheory
+{
+    public FormalSystem System { get; }
+    public IEnumerable<Theorem> Theorems => System.DeriveTheorems();
+
+    public FormalTheory(FormalSystem system)
+    {
+        System = system;
+    }
+
+    public bool Proves(Formula formula) => Theorems.Any(t => t.Formula.Equals(formula));
+}
+
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Formulas\Formula.cs ---
+
+
+namespace AxioMath.Core.Formulas;
+public class Formula
+{
+    public string Content { get; }
+    public FormulaNode Root { get; }
+
+    public Formula(string content, FormulaNode root)
+    {
+        Content = content;
+        Root = root;
+    }
+
+    public override string ToString() => Content;
+
+    public override bool Equals(object? obj)
+    {
+        return obj is Formula other && FormulaNodeEquals(Root, other.Root);
+    }
+
+    public override int GetHashCode()
+    {
+        return GetNodeHashCode(Root);
+    }
+
+    private static bool FormulaNodeEquals(FormulaNode a, FormulaNode b)
+    {
+        if (a is AtomNode atomA && b is AtomNode atomB)
+            return atomA.Name == atomB.Name;
+        if (a is UnaryNode ua && b is UnaryNode ub)
+            return ua.Operator == ub.Operator &&
+                   FormulaNodeEquals(ua.Operand, ub.Operand);
+        if (a is BinaryNode ba && b is BinaryNode bb)
+            return ba.Operator == bb.Operator &&
+                   FormulaNodeEquals(ba.Left, bb.Left) &&
+                   FormulaNodeEquals(ba.Right, bb.Right);
+        return false;
+    }
+
+    private static int GetNodeHashCode(FormulaNode node)
+    {
+        return node switch
+        {
+            AtomNode a => a.Name.GetHashCode(),
+            UnaryNode u => HashCode.Combine(u.Operator, GetNodeHashCode(u.Operand)),
+            BinaryNode b => HashCode.Combine(b.Operator, GetNodeHashCode(b.Left), GetNodeHashCode(b.Right)),
+            _ => 0
+        };
+    }
+
+}
+
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Formulas\FormulaNodes.cs ---
+
+namespace AxioMath.Core.Formulas;
+public abstract class FormulaNode { }
+public class AtomNode : FormulaNode
+{
+    public string Name { get; }
+    public AtomNode(string name) => Name = name;
+    public override string ToString() => Name;
+}
+
+public class UnaryNode : FormulaNode
+{
+    public string Operator { get; }
+    public FormulaNode Operand { get; }
+    public UnaryNode(string op, FormulaNode operand) => (Operator, Operand) = (op, operand);
+    public override string ToString() => $"{Operator} {Operand}";
+}
+
+public class BinaryNode : FormulaNode
+{
+    public string Operator { get; }
+    public FormulaNode Left { get; }
+    public FormulaNode Right { get; }
+    public BinaryNode(string op, FormulaNode left, FormulaNode right) =>
+        (Operator, Left, Right) = (op, left, right);
+    public override string ToString() => $"( {Left} {Operator} {Right} )";
+}
+
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Formulas\IDeductionRule.cs ---
+
+using AxioMath.Core.Syntax;
+
+namespace AxioMath.Core.Formulas;
+
+public interface IDeductionRule
+{
+    /// <summary>
+    /// Applies the rule to a set of premises and produces conclusions if applicable.
+    /// The returned tuple contains the derived formula and the premises used.
+    /// </summary>
+    IEnumerable<(Formula conclusion, IReadOnlyList<Formula> premises)> Apply(IEnumerable<Formula> premises, FormalLanguage language);
+}
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Formulas\Theorem.cs ---
+
+using System.Text;
+
+namespace AxioMath.Core.Formulas;
+
+/// <summary>
+/// Represents a derived theorem along with the rule and premises used to derive it.
+/// </summary>
+public class Theorem
+{
+    public Formula Formula { get; }
+    public IDeductionRule? Rule { get; }
+    public IReadOnlyList<Theorem> Premises { get; }
+
+    public Theorem(Formula formula, IDeductionRule? rule = null, IReadOnlyList<Theorem>? premises = null)
+    {
+        Formula = formula;
+        Rule = rule;
+        Premises = premises ?? new List<Theorem>();
+    }
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Formula: {Formula}");
+
+        if (Rule != null)
+        {
+            sb.AppendLine($"Rule: {Rule.GetType().Name}");
+        }
+        else
+        {
+            sb.AppendLine("Rule: (axiom or initial)");
+        }
+
+        if (Premises.Count > 0)
+        {
+            sb.AppendLine("Premises:");
+            for (int i = 0; i < Premises.Count; i++)
+            {
+                sb.AppendLine($"  [{i + 1}] {Premises[i].Formula}");
+            }
+        }
+        else
+        {
+            sb.AppendLine("Premises: none");
+        }
+
+        return sb.ToString();
+    }
+}
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Semantics\IInterpretation.cs ---
+
+using AxioMath.Core.Formulas;
+
+namespace AxioMath.Core.Semantics;
+public interface IInterpretation
+{
+    /// <summary>EvalÃºa si una fÃ³rmula es verdadera bajo esta interpretaciÃ³n.</summary>
+    bool IsTrue(Formula formula);
+}
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Semantics\Model.cs ---
+
+using AxioMath.Core.Formulas;
+using AxioMath.Core.Semantics;
+
+public class Model
+{
+    public IInterpretation Interpretation { get; }
+
+    public Model(IInterpretation interpretation)
+    {
+        Interpretation = interpretation;
+    }
+
+    public bool Satisfies(Formula formula) => Interpretation.IsTrue(formula);
+}
+
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Syntax\FormalLanguage.cs ---
+
+using AxioMath.Core.Formulas;
+using AxioMath.Core.Parsers;
+
+namespace AxioMath.Core.Syntax;
+
+
+
+public class FormalLanguage
+{
+    public Grammar Grammar { get; }
+
+    public FormalLanguage(Grammar grammar)
+    {
+        Grammar = grammar;
+    }
+
+    public bool BelongsToLanguage(string input) => Grammar.IsValid(input);
+
+    public Formula CreateFormula(string input)
+    {
+        if (!BelongsToLanguage(input))
+            throw new ArgumentException($"Input is not a valid formula in this language. {input}");
+
+        var parser = new GrammarParser(Grammar);
+        var node = parser.Parse(input);
+        return new Formula(input, node);
+    }
+
+}
+
+
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Syntax\Grammar.cs ---
+
+using System.Text.RegularExpressions;
+using AxioMath.Core.Syntax;
+
+
+namespace AxioMath.Core.Syntax;
+
+public class Grammar
+{
+    public HashSet<Symbol> NonTerminals { get; } = new();
+    public HashSet<Symbol> Terminals { get; } = new();
+    public List<ProductionRule> Rules { get; } = new();
+    public Symbol StartSymbol { get; }
+
+    public Grammar(Symbol startSymbol)
+    {
+        if (startSymbol.IsTerminal)
+            throw new ArgumentException("Start symbol must be non-terminal.");
+
+        StartSymbol = startSymbol;
+        NonTerminals.Add(startSymbol);
+    }
+
+    public void AddRule(Symbol left, Symbol[] right, RuleInterpretation? interpretation = null, string? op = null)
+    {
+        var rule = new ProductionRule(left, right, interpretation, op);
+        Rules.Add(rule);
+        NonTerminals.Add(left);
+        foreach (var s in right)
+        {
+            if (s.IsTerminal) Terminals.Add(s);
+            else NonTerminals.Add(s);
+        }
+    }
+
+
+    public virtual bool IsValid(string input)
+    {
+        var tokens = Tokenize(input);
+        return TryDerive(tokens, StartSymbol, 0).Any(pos => pos == tokens.Length);
+    }
+
+    protected virtual IEnumerable<int> TryDerive(string[] tokens, Symbol current, int position)
+    {
+        if (current.IsTerminal)
+        {
+            if (position < tokens.Length && current.Value == tokens[position])
+                yield return position + 1;
+            yield break;
+        }
+
+        foreach (var rule in Rules.Where(r => r.Left.Equals(current)))
+        {
+            IEnumerable<int> positions = new[] { position };
+            foreach (var symbol in rule.Right)
+            {
+                var nextPositions = new List<int>();
+                foreach (var p in positions)
+                    nextPositions.AddRange(TryDerive(tokens, symbol, p));
+                positions = nextPositions;
+                if (!positions.Any()) break;
+            }
+            foreach (var p in positions)
+                yield return p;
+        }
+    }
+
+    public virtual IEnumerable<string> Generate(int maxDepth = 3)
+    {
+        return GenerateFrom(StartSymbol, maxDepth)
+            .Where(seq => seq.All(s => s.IsTerminal))
+            .Select(seq => string.Join(" ", seq.Select(s => s.Value)));
+    }
+
+    protected virtual IEnumerable<List<Symbol>> GenerateFrom(Symbol symbol, int depth)
+    {
+        if (depth == 0)
+            yield break;
+
+        if (symbol.IsTerminal)
+        {
+            yield return new List<Symbol> { symbol };
+            yield break;
+        }
+
+        foreach (var rule in Rules.Where(r => r.Left.Equals(symbol)))
+        {
+            var expansions = new List<List<Symbol>> { new() };
+            foreach (var rhsSymbol in rule.Right)
+            {
+                var newExpansions = new List<List<Symbol>>();
+                foreach (var partial in expansions)
+                {
+                    foreach (var part in GenerateFrom(rhsSymbol, depth - 1))
+                    {
+                        var merged = new List<Symbol>(partial);
+                        merged.AddRange(part);
+                        newExpansions.Add(merged);
+                    }
+                }
+                expansions = newExpansions;
+            }
+            foreach (var exp in expansions)
+                yield return exp;
+        }
+    }
+
+    public virtual string[] Tokenize(string input)
+    {
+        var allTerminals = Terminals.Select(t => Regex.Escape(t.Value)).OrderByDescending(s => s.Length);
+        var pattern = string.Join("|", allTerminals);
+        var regex = new Regex($"({pattern})");
+
+        var spaced = regex.Replace(input, " $1 ");
+        return spaced.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    }
+}
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Syntax\Parser.cs ---
+
+
+
+using AxioMath.Core.Formulas;
+using AxioMath.Core.Syntax;
+
+
+namespace AxioMath.Core.Parsers;
+
+public class GrammarParser
+{
+    private readonly Grammar _grammar;
+
+    public GrammarParser(Grammar grammar)
+    {
+        _grammar = grammar;
+    }
+
+    public FormulaNode Parse(string input)
+    {
+        var tokens = _grammar.Tokenize(input);
+        var (success, node, pos) = ParseSymbol(_grammar.StartSymbol, tokens, 0);
+        if (!success || pos != tokens.Length)
+            throw new ArgumentException("Not a well-formed formula");
+
+        return node!;
+    }
+
+    private (bool success, FormulaNode? node, int nextPos) ParseSymbol(Symbol symbol, string[] tokens, int position)
+    {
+        if (symbol.IsTerminal)
+        {
+            if (position < tokens.Length && tokens[position] == symbol.Value)
+                return (true, new AtomNode(symbol.Value), position + 1);
+            return (false, null, position);
+        }
+
+        foreach (var rule in _grammar.Rules.Where(r => r.Left.Equals(symbol)))
+        {
+            var currentPos = position;
+            var children = new List<FormulaNode>();
+
+            var success = true;
+            foreach (var part in rule.Right)
+            {
+                var (matched, node, nextPos) = ParseSymbol(part, tokens, currentPos);
+                if (!matched)
+                {
+                    success = false;
+                    break;
+                }
+                children.Add(node!);
+                currentPos = nextPos;
+            }
+
+            if (success)
+            {
+                var node = BuildAst(rule, children);
+                return (true, node, currentPos);
+            }
+        }
+
+        return (false, null, position);
+    }
+
+    private FormulaNode BuildAst(ProductionRule rule, List<FormulaNode> children)
+    {
+        return rule.Interpretation switch
+        {
+            RuleInterpretation.Atom => children[0],
+            RuleInterpretation.Unary => new UnaryNode(rule.Operator!, children[1]),
+
+            // El operador estÃ¡ en children[2], los operandos en 1 y 3
+            RuleInterpretation.Binary => new BinaryNode(rule.Operator!, children[1], children[3]),
+
+            _ => throw new NotSupportedException($"Unsupported rule interpretation: {rule.Interpretation}")
+        };
+    }
+
+
+
+
+}
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Syntax\ProductionRule.cs ---
+
+
+namespace AxioMath.Core.Syntax;
+
+public enum RuleInterpretation
+{
+    Atom,
+    Unary,
+    Binary,
+
+}
+public class ProductionRule
+{
+
+
+    public Symbol Left { get; }
+    public IReadOnlyList<Symbol> Right { get; }
+    public RuleInterpretation? Interpretation { get; }
+    public string? Operator { get; }       // e.g. "Â¬", "â†’"
+
+    public ProductionRule(Symbol left, IEnumerable<Symbol> right, RuleInterpretation? interpretation = null, string? @operator = null)
+    {
+        if (left.IsTerminal)
+            throw new ArgumentException("Left-hand side must be a non-terminal symbol.");
+
+        Left = left;
+        Right = right.ToList();
+        Interpretation = interpretation;
+        Operator = @operator;
+    }
+
+    public override string ToString() => $"{Left} â†’ {string.Join(" ", Right)}";
+}
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Core\Syntax\Symbol.cs ---
+
+namespace AxioMath.Core.Syntax;
+public class Symbol
+{
+    public string Value { get; }
+    public bool IsTerminal { get; }
+
+    public Symbol(string value, bool isTerminal)
+    {
+        Value = value;
+        IsTerminal = isTerminal;
+    }
+
+    public override string ToString() => Value;
+    public override bool Equals(object? obj) => obj is Symbol s && s.Value == Value && s.IsTerminal == IsTerminal;
+    
+}
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Logic\AxioMath.Logic.csproj ---
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\AxioMath.Core\AxioMath.Core.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Logic\DeductionRules\Propositional\DisjunctionEliminationRule.cs ---
+
+using System.Collections.Generic;
+using System.Linq;
+using AxioMath.Core.Formulas;
+using AxioMath.Core.Syntax;
+
+namespace AxioMath.Logic.DeductionRules.Propositional;
+
+/// <summary>
+/// Implements the âˆ¨ Elimination rule: from A âˆ¨ B, A â†’ C, and B â†’ C, infer C.
+/// </summary>
+public class DisjunctionEliminationRule : IDeductionRule
+{
+    public IEnumerable<(Formula conclusion, IReadOnlyList<Formula> premises)> Apply(IEnumerable<Formula> premises, FormalLanguage language)
+    {
+        var formulas = premises.ToList();
+
+        foreach (var disjunction in formulas.Where(f => IsBinaryOperator(f, "âˆ¨")))
+        {
+            var disjNode = (BinaryNode)disjunction.Root;
+            var A = disjNode.Left;
+            var B = disjNode.Right;
+
+            foreach (var impl1 in formulas.Where(f => IsBinaryOperator(f, "â†’") && FormulaNodeEquals(((BinaryNode)f.Root).Left, A)))
+            {
+                var C1 = ((BinaryNode)impl1.Root).Right;
+
+                foreach (var impl2 in formulas.Where(f => IsBinaryOperator(f, "â†’") && FormulaNodeEquals(((BinaryNode)f.Root).Left, B)))
+                {
+                    var C2 = ((BinaryNode)impl2.Root).Right;
+
+                    if (FormulaNodeEquals(C1, C2))
+                    {
+                        var conclusion = new Formula(C1.ToString(), C1); // preserve original content from node
+                        yield return (conclusion, new List<Formula> { disjunction, impl1, impl2 });
+                    }
+                }
+            }
+        }
+    }
+
+    private static bool IsBinaryOperator(Formula formula, string op)
+    {
+        return formula.Root is BinaryNode binary && binary.Operator == op;
+    }
+
+    private static bool FormulaNodeEquals(FormulaNode a, FormulaNode b)
+    {
+        // Copiado directamente del mÃ©todo privado en tu clase Formula
+        if (a is AtomNode atomA && b is AtomNode atomB)
+            return atomA.Name == atomB.Name;
+        if (a is UnaryNode ua && b is UnaryNode ub)
+            return ua.Operator == ub.Operator &&
+                   FormulaNodeEquals(ua.Operand, ub.Operand);
+        if (a is BinaryNode ba && b is BinaryNode bb)
+            return ba.Operator == bb.Operator &&
+                   FormulaNodeEquals(ba.Left, bb.Left) &&
+                   FormulaNodeEquals(ba.Right, bb.Right);
+        return false;
+    }
+}
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Logic\DeductionRules\Propositional\ModusPonensRule.cs ---
+
+
+using AxioMath.Core.Formulas;
+using AxioMath.Core.Syntax;
+
+
+namespace AxioMath.Logic.DeductionRules.Propositional;
+
+  
+public class ModusPonensRule : IDeductionRule
+{
+    public IEnumerable<(Formula conclusion, IReadOnlyList<Formula> premises)> Apply(IEnumerable<Formula> premises, FormalLanguage language)
+    {
+        var list = premises.ToList();
+
+        foreach (var p in list)
+        {
+            foreach (var implication in list)
+            {
+                if (implication.Root is BinaryNode imp &&
+                    imp.Operator == "â†’" &&
+                    AreEquivalent(imp.Left, p.Root))
+                {
+                    var content = Serialize(imp.Right);
+
+                    var result = TryCreateFormula(language, content, imp.Right);
+                    if (result != null)
+                        yield return (result, new List<Formula> { p, implication });
+                }
+            }
+        }
+    }
+
+    private Formula? TryCreateFormula(FormalLanguage language, string content, FormulaNode root)
+    {
+        try
+        {
+            if (language.BelongsToLanguage(content))
+                return new Formula(content, root);
+            else
+                Console.WriteLine($"Skipped invalid formula: {content}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating formula from: {content} â†’ {ex.Message}");
+        }
+
+        return null;
+    }
+
+    private bool AreEquivalent(FormulaNode a, FormulaNode b)
+    {
+        if (a is AtomNode atomA && b is AtomNode atomB)
+            return atomA.Name == atomB.Name;
+        if (a is UnaryNode una && b is UnaryNode unb)
+            return una.Operator == unb.Operator && AreEquivalent(una.Operand, unb.Operand);
+        if (a is BinaryNode bina && b is BinaryNode binb)
+            return bina.Operator == binb.Operator &&
+                   AreEquivalent(bina.Left, binb.Left) &&
+                   AreEquivalent(bina.Right, binb.Right);
+        return false;
+    }
+
+    private string Serialize(FormulaNode node)
+    {
+        return node switch
+        {
+            AtomNode a => a.Name,
+            UnaryNode u => $"{u.Operator}{Serialize(u.Operand)}",
+            BinaryNode b => $"({Serialize(b.Left)} {b.Operator} {Serialize(b.Right)})",
+            _ => throw new NotSupportedException()
+        };
+    }
+}
+
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Logic\DeductionRules\Propositional\ModusTollens.cs ---
+
+
+using AxioMath.Core.Formulas;
+using AxioMath.Core.Syntax;
+
+namespace AxioMath.Logic.DeductionRules.Propositional;
+
+public class ModusTollensRule : IDeductionRule
+{
+    public IEnumerable<(Formula conclusion, IReadOnlyList<Formula> premises)> Apply(IEnumerable<Formula> premises, FormalLanguage language)
+    {
+        var list = premises.ToList();
+
+        foreach (var implication in list)
+        {
+            if (implication.Root is BinaryNode imp && imp.Operator == "â†’")
+            {
+                foreach (var negatedQ in list)
+                {
+                    if (negatedQ.Root is UnaryNode neg &&
+                        neg.Operator == "Â¬" &&
+                        AreEquivalent(imp.Right, neg.Operand))
+                    {
+                        var negatedP = new UnaryNode("Â¬", imp.Left);
+                        var content = Serialize(negatedP);
+
+                        var result = TryCreateFormula(language, content, negatedP);
+                        if (result != null)
+                            yield return (result, new List<Formula> { implication, negatedQ });
+                    }
+                }
+            }
+        }
+    }
+
+    private Formula? TryCreateFormula(FormalLanguage language, string content, FormulaNode root)
+    {
+        try
+        {
+            if (language.BelongsToLanguage(content))
+                return new Formula(content, root);
+            else
+                Console.WriteLine($"Skipped invalid formula: {content}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating formula from: {content} â†’ {ex.Message}");
+        }
+
+        return null;
+    }
+
+    private bool AreEquivalent(FormulaNode a, FormulaNode b)
+    {
+        if (a is AtomNode atomA && b is AtomNode atomB)
+            return atomA.Name == atomB.Name;
+        if (a is UnaryNode una && b is UnaryNode unb)
+            return una.Operator == unb.Operator && AreEquivalent(una.Operand, unb.Operand);
+        if (a is BinaryNode bina && b is BinaryNode binb)
+            return bina.Operator == binb.Operator &&
+                   AreEquivalent(bina.Left, binb.Left) &&
+                   AreEquivalent(bina.Right, binb.Right);
+        return false;
+    }
+
+    private string Serialize(FormulaNode node)
+    {
+        return node switch
+        {
+            AtomNode a => a.Name,
+            UnaryNode u => $"{u.Operator}{Serialize(u.Operand)}",
+            BinaryNode b => $"({Serialize(b.Left)} {b.Operator} {Serialize(b.Right)})",
+            _ => throw new NotSupportedException()
+        };
+    }
+}
+
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Logic\DeductionRules\Propositional\OperatorSymbols.cs ---
+
+namespace AxioMath.Logic.DeductionRules.Propositional;
+/// <summary>
+/// Contains all standard operator symbols used in formulas.
+/// </summary>
+public static class OperatorSymbols
+{
+    public const string Not = "Â¬";
+    public const string And = "âˆ§";
+    public const string Or = "âˆ¨";
+    public const string Implies = "â†’";
+    public const string Iff = "â†”";
+}
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Logic\DeductionRules\Propositional\PropositionalLanguageBuilder.cs ---
+
+using AxioMath.Core.Syntax;
+using AxioMath.Logic.DeductionRules.Propositional;
+
+public static class PropositionalLanguageBuilder
+{
+    public static FormalLanguage Build()
+    {
+        var not = new Symbol(OperatorSymbols.Not, true);
+        var and = new Symbol(OperatorSymbols.And, true);
+        var or = new Symbol(OperatorSymbols.Or, true);
+        var implies = new Symbol(OperatorSymbols.Implies, true);
+        var iff = new Symbol(OperatorSymbols.Iff, true);
+        var lparen = new Symbol("(", true);
+        var rparen = new Symbol(")", true);
+
+        var p = new Symbol("p", true);
+        var q = new Symbol("q", true);
+        var r = new Symbol("r", true);
+        var s = new Symbol("s", true);
+
+        var atom = new Symbol("Atom", false);
+        var formula = new Symbol("Formula", false);
+
+        var grammar = new Grammar(formula);
+
+        grammar.AddRule(atom, new[] { p }, RuleInterpretation.Atom);
+        grammar.AddRule(atom, new[] { q }, RuleInterpretation.Atom);
+        grammar.AddRule(atom, new[] { r }, RuleInterpretation.Atom);
+        grammar.AddRule(atom, new[] { s }, RuleInterpretation.Atom);
+
+        grammar.AddRule(formula, new[] { atom }, RuleInterpretation.Atom);
+        grammar.AddRule(formula, new[] { not, formula }, RuleInterpretation.Unary, OperatorSymbols.Not);
+        grammar.AddRule(formula, new[] { lparen, formula, and, formula, rparen }, RuleInterpretation.Binary, OperatorSymbols.And);
+        grammar.AddRule(formula, new[] { lparen, formula, or, formula, rparen }, RuleInterpretation.Binary, OperatorSymbols.Or);
+        grammar.AddRule(formula, new[] { lparen, formula, implies, formula, rparen }, RuleInterpretation.Binary, OperatorSymbols.Implies);
+        grammar.AddRule(formula, new[] { lparen, formula, iff, formula, rparen }, RuleInterpretation.Binary, OperatorSymbols.Iff);
+
+        return new FormalLanguage(grammar);
+    }
+}
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.sln ---
+
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AxioMath.Core", "AxioMath.Core\AxioMath.Core.csproj", "{2C00C2EE-2193-40AB-A2B9-13DB9010A679}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AxioMath.Logic", "AxioMath.Logic\AxioMath.Logic.csproj", "{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AxioMath.Tests", "AxioMath.Tests\AxioMath.Tests.csproj", "{D97BD686-29DB-40D0-AD2F-F0D5059DF994}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AxioMath.CliApp", "AxioMath.CliApp\AxioMath.CliApp.csproj", "{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B0C722EF-E43C-CA36-5DEF-EA2CAE96A593}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0C722EF-E43C-CA36-5DEF-EA2CAE96A593}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0C722EF-E43C-CA36-5DEF-EA2CAE96A593}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B0C722EF-E43C-CA36-5DEF-EA2CAE96A593}.Debug|x64.Build.0 = Debug|Any CPU
+		{B0C722EF-E43C-CA36-5DEF-EA2CAE96A593}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B0C722EF-E43C-CA36-5DEF-EA2CAE96A593}.Debug|x86.Build.0 = Debug|Any CPU
+		{B0C722EF-E43C-CA36-5DEF-EA2CAE96A593}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0C722EF-E43C-CA36-5DEF-EA2CAE96A593}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0C722EF-E43C-CA36-5DEF-EA2CAE96A593}.Release|x64.ActiveCfg = Release|Any CPU
+		{B0C722EF-E43C-CA36-5DEF-EA2CAE96A593}.Release|x64.Build.0 = Release|Any CPU
+		{B0C722EF-E43C-CA36-5DEF-EA2CAE96A593}.Release|x86.ActiveCfg = Release|Any CPU
+		{B0C722EF-E43C-CA36-5DEF-EA2CAE96A593}.Release|x86.Build.0 = Release|Any CPU
+		{2C00C2EE-2193-40AB-A2B9-13DB9010A679}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C00C2EE-2193-40AB-A2B9-13DB9010A679}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C00C2EE-2193-40AB-A2B9-13DB9010A679}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2C00C2EE-2193-40AB-A2B9-13DB9010A679}.Debug|x64.Build.0 = Debug|Any CPU
+		{2C00C2EE-2193-40AB-A2B9-13DB9010A679}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2C00C2EE-2193-40AB-A2B9-13DB9010A679}.Debug|x86.Build.0 = Debug|Any CPU
+		{2C00C2EE-2193-40AB-A2B9-13DB9010A679}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C00C2EE-2193-40AB-A2B9-13DB9010A679}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C00C2EE-2193-40AB-A2B9-13DB9010A679}.Release|x64.ActiveCfg = Release|Any CPU
+		{2C00C2EE-2193-40AB-A2B9-13DB9010A679}.Release|x64.Build.0 = Release|Any CPU
+		{2C00C2EE-2193-40AB-A2B9-13DB9010A679}.Release|x86.ActiveCfg = Release|Any CPU
+		{2C00C2EE-2193-40AB-A2B9-13DB9010A679}.Release|x86.Build.0 = Release|Any CPU
+		{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}.Debug|x64.Build.0 = Debug|Any CPU
+		{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}.Debug|x86.Build.0 = Debug|Any CPU
+		{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}.Release|x64.ActiveCfg = Release|Any CPU
+		{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}.Release|x64.Build.0 = Release|Any CPU
+		{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}.Release|x86.ActiveCfg = Release|Any CPU
+		{0A53A78A-EDC9-4E50-A822-EC80A5BBDA72}.Release|x86.Build.0 = Release|Any CPU
+		{D97BD686-29DB-40D0-AD2F-F0D5059DF994}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D97BD686-29DB-40D0-AD2F-F0D5059DF994}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D97BD686-29DB-40D0-AD2F-F0D5059DF994}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D97BD686-29DB-40D0-AD2F-F0D5059DF994}.Debug|x64.Build.0 = Debug|Any CPU
+		{D97BD686-29DB-40D0-AD2F-F0D5059DF994}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D97BD686-29DB-40D0-AD2F-F0D5059DF994}.Debug|x86.Build.0 = Debug|Any CPU
+		{D97BD686-29DB-40D0-AD2F-F0D5059DF994}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D97BD686-29DB-40D0-AD2F-F0D5059DF994}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D97BD686-29DB-40D0-AD2F-F0D5059DF994}.Release|x64.ActiveCfg = Release|Any CPU
+		{D97BD686-29DB-40D0-AD2F-F0D5059DF994}.Release|x64.Build.0 = Release|Any CPU
+		{D97BD686-29DB-40D0-AD2F-F0D5059DF994}.Release|x86.ActiveCfg = Release|Any CPU
+		{D97BD686-29DB-40D0-AD2F-F0D5059DF994}.Release|x86.Build.0 = Release|Any CPU
+		{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}.Debug|x64.Build.0 = Debug|Any CPU
+		{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}.Debug|x86.Build.0 = Debug|Any CPU
+		{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}.Release|x64.ActiveCfg = Release|Any CPU
+		{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}.Release|x64.Build.0 = Release|Any CPU
+		{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}.Release|x86.ActiveCfg = Release|Any CPU
+		{1E73E1D0-E5FA-4A40-BBD4-AB8B8B39D3B3}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A4D53108-1B2B-4865-8066-E549A2D4C8BD}
+	EndGlobalSection
+EndGlobal
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Tests\AxioMath.Tests.csproj ---
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AxioMath.Core\AxioMath.Core.csproj" />
+    <ProjectReference Include="..\AxioMath.Logic\AxioMath.Logic.csproj" />
+  </ItemGroup>
+
+</Project>
+
+--- FILE: C:\Users\pc\source\repos\AxioMath\AxioMath.Tests\DeductionTests.cs ---
+
+
+using AxioMath.Core.Formulas;
+using AxioMath.Core.Syntax;
+using AxioMath.Logic.DeductionRules.Propositional;
+
+
+
+namespace AxioMath.Tests;
+
+public class DeductionTests
+{
+
+
+    [Fact]
+    public void Formula_Should_Be_Recognized_As_Valid()
+    {
+        var lang = PropositionalLanguageBuilder.Build();
+        var valid = lang.BelongsToLanguage("(p → q)");
+        Assert.True(valid);
+    }
+
+    [Fact]
+    public void Formula_Should_Parse_Correctly()
+    {
+        var lang = PropositionalLanguageBuilder.Build();
+        var formula = lang.CreateFormula("(p → q)");
+        Assert.NotNull(formula);
+        Assert.Equal("(p → q)", formula.Content);
+    }
+
+    [Fact]
+    public void ModusPonens_Should_Derive_Q_From_P_And_Implication()
+    {
+        var lang = PropositionalLanguageBuilder.Build();
+        var p = lang.CreateFormula("p");
+        var imp = lang.CreateFormula("(p → q)");
+        var system = new FormalSystem(lang, new[] { p, imp }, new[] { new ModusPonensRule() });
+        var theory = new FormalTheory(system);
+
+        var q = lang.CreateFormula("q");
+        var theorem = theory.Theorems.FirstOrDefault(t => t.Formula.Equals(q));
+        Assert.NotNull(theorem);
+        Assert.IsType<ModusPonensRule>(theorem!.Rule);
+        Assert.Equal(2, theorem.Premises.Count);
+        Assert.Contains(theorem.Premises, th => th.Formula.Equals(p));
+        Assert.Contains(theorem.Premises, th => th.Formula.Equals(imp));
+    }
+
+    [Fact]
+    public void ModusPonens_Should_Not_Derive_Q_Without_P()
+    {
+        var lang = PropositionalLanguageBuilder.Build();
+        var imp = lang.CreateFormula("(p → q)");
+        var system = new FormalSystem(lang, new[] { imp }, new[] { new ModusPonensRule() });
+        var theory = new FormalTheory(system);
+
+        var q = lang.CreateFormula("q");
+        Assert.DoesNotContain(theory.Theorems, t => t.Formula.Equals(q));
+    }
+
+    [Fact]
+    public void Grammar_Should_Generate_Some_Valid_Formulas()
+    {
+        var lang = PropositionalLanguageBuilder.Build();
+        var formulas = lang.Grammar.Generate(3).ToList();
+        Assert.NotEmpty(formulas);
+        Assert.All(formulas, f => Assert.True(lang.BelongsToLanguage(f)));
+    }
+    [Fact]
+    public void ModusTollens_Should_Derive_NotP_From_Implication_And_NotQ()
+    {
+        var lang = PropositionalLanguageBuilder.Build();
+        var imp = lang.CreateFormula("(p → q)");
+        var notQ = lang.CreateFormula("¬q");
+
+        var system = new FormalSystem(lang, new[] { imp, notQ }, new[] { new ModusTollensRule() });
+        var theory = new FormalTheory(system);
+
+        var notP = lang.CreateFormula("¬p");
+
+        var theorem = theory.Theorems.FirstOrDefault(t => t.Formula.Equals(notP));
+        Assert.NotNull(theorem);
+        Assert.IsType<ModusTollensRule>(theorem!.Rule);
+    }
+    [Fact]
+    public void DisjunctionElimination_Should_Derive_Q()
+    {
+        var lang = PropositionalLanguageBuilder.Build();
+        var disj = lang.CreateFormula("(p ∨ r)");
+        var pImpliesQ = lang.CreateFormula("(p → q)");
+        var rImpliesQ = lang.CreateFormula("(r → q)");
+
+        var system = new FormalSystem(
+            lang,
+            new[] { disj, pImpliesQ, rImpliesQ },
+            new IDeductionRule[] { new DisjunctionEliminationRule() }
+        );
+
+        var theory = new FormalTheory(system);
+        var q = lang.CreateFormula("q");
+
+        var theorem = theory.Theorems.FirstOrDefault(t => t.Formula.Equals(q));
+        Assert.NotNull(theorem);
+        Assert.IsType<DisjunctionEliminationRule>(theorem!.Rule);
+    }
+    [Fact]
+    public void Combined_DisjunctionElimination_And_ModusTollens()
+    {
+        var lang = PropositionalLanguageBuilder.Build();
+
+        var disj = lang.CreateFormula("(p ∨ r)");
+        var pImpliesS = lang.CreateFormula("(p → s)");
+        var rImpliesS = lang.CreateFormula("(r → s)");
+        var notS = lang.CreateFormula("¬s");
+
+        var system = new FormalSystem(
+            lang,
+            new[] { disj, pImpliesS, rImpliesS, notS },
+            new IDeductionRule[]
+            {
+            new DisjunctionEliminationRule(),
+            new ModusTollensRule()
+            }
+        );
+
+        var theory = new FormalTheory(system);
+
+        var notP = lang.CreateFormula("¬p");
+        var notR = lang.CreateFormula("¬r");
+
+        Assert.Contains(theory.Theorems, t => t.Formula.Equals(notP));
+        Assert.Contains(theory.Theorems, t => t.Formula.Equals(notR));
+    }
+    [Fact]
+    public void DisjunctionElimination_Should_Not_Apply_Without_Implications()
+    {
+        var lang = PropositionalLanguageBuilder.Build();
+
+        var disj = lang.CreateFormula("(p ∨ r)");
+
+        var system = new FormalSystem(
+            lang,
+            new[] { disj },
+            new IDeductionRule[] { new DisjunctionEliminationRule() }
+        );
+
+        var theory = new FormalTheory(system);
+        var q = lang.CreateFormula("q");
+
+        Assert.DoesNotContain(theory.Theorems, t => t.Formula.Equals(q));
+    }
+
+
+
+}

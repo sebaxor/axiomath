@@ -30,7 +30,7 @@ public class DisjunctionEliminationRule : IDeductionRule
 
                     if (FormulaNodeEquals(C1, C2))
                     {
-                        var conclusion = new Formula(C1.ToString(), C1); // preserve original content from node
+                        var conclusion = new Formula(C1?.ToString() ?? string.Empty, C1!); // preserve original content from node
                         yield return (conclusion, new List<Formula> { disjunction, impl1, impl2 });
                     }
                 }

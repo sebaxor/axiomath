@@ -1,4 +1,4 @@
-using AxioMath.Core.FormalSystems;
+
 using AxioMath.Core.Formulas;
 using AxioMath.Core.Syntax;
 
